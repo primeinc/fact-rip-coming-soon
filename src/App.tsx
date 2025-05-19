@@ -5,6 +5,7 @@ import { Pulse } from "./components/Pulse";
 import { Seal } from "./components/Seal";
 import { CTAButton } from "./components/CTAButton";
 import { Modal } from "./components/Modal";
+import { TestErrorButton } from "./components/TestErrorButton";
 import { useViewportHeight } from "./hooks/useViewportHeight";
 import { useTelemetry } from "./hooks/useTelemetry";
 import { useUserJourney } from "./contexts/UserJourneyContext";
@@ -74,6 +75,8 @@ export default function App() {
         hasJoined={!!state.joinedTimestamp}
         onReset={handleReset}
       />
+      
+      <TestErrorButton />
     </main>
   );
 }
