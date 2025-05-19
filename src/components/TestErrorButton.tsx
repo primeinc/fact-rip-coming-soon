@@ -16,6 +16,7 @@ export function TestErrorButton() {
   return (
     <button
       id="test-error-trigger"
+      tabIndex={-1}
       onClick={() => setShouldError(true)}
       style={{
         position: 'fixed',
@@ -27,6 +28,7 @@ export function TestErrorButton() {
         pointerEvents: 'all',
         zIndex: 9999
       }}
+      aria-hidden="true"
     >
       Test Error
     </button>
