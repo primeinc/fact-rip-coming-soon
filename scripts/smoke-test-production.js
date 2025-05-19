@@ -5,7 +5,7 @@
  * Runs against deployed URL to ensure production readiness
  */
 
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 
 const SMOKE_TEST_URL = process.env.SMOKE_TEST_URL || 'https://fact.rip';
 

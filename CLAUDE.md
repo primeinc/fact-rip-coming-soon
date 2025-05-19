@@ -20,7 +20,23 @@ Single-page React app for fact.rip - a civic memory utility. The page serves as 
 1. **Initial Phase**: Basic coming soon page with animations
 2. **Refactor Phase**: Modularized architecture with custom hooks
 3. **Hardening Phase**: Added E2E tests, telemetry, error reporting
-4. **Current State**: Production-ready with full CI/CD pipeline
+4. **Architecture Fix**: Major refactor to fix global state leaks and race conditions
+5. **Current State**: Production-ready with proper test isolation and deterministic state management
+
+## Recent Architecture Refactor
+
+### Problems Fixed
+1. **Global Storage Adapter**: Replaced singleton with context-injected adapters to prevent test state leakage
+2. **Race Conditions**: Removed useEffect that automatically set `hasVisited` - now only set on user action
+3. **Test Isolation**: Each test now gets a fresh storage adapter instance
+4. **Window Globals**: Replaced brittle `window.__PLAYWRIGHT_TEST__` checks with proper dependency injection
+
+### Key Changes
+1. Created `StorageContext` provider for dependency injection
+2. Added `test-utils.ts` to inject test storage adapters
+3. Updated `App.tsx` to remove automatic state mutations
+4. Fixed modal logic to show correct content based on actual state
+5. Added proper timing to state transitions
 
 ## Architecture
 
@@ -34,8 +50,10 @@ src/
 │   ├── Pulse.tsx         # ARIA-compliant
 │   ├── Seal.tsx
 │   └── Title.tsx
+├── contexts/       # React contexts for DI
+│   └── StorageContext.tsx # Storage adapter injection
 ├── hooks/          # Custom React hooks (unit tested)
-│   ├── useLocalStorage.ts
+│   ├── useLocalStorage.ts # Updated to use context
 │   ├── useTelemetry.ts
 │   └── useViewportHeight.ts
 ├── constants/      # Configuration
@@ -43,27 +61,29 @@ src/
 ├── config/         # Branding and text
 │   └── branding.ts
 ├── utils/         # Utility functions
-│   └── storage.ts  # localStorage abstraction
+│   ├── storage.ts  # Storage factory function
+│   └── storage-adapter.ts # Storage adapter interfaces
 ├── test/          # Test setup
 │   └── setup.ts
-├── App.tsx        # Main component
+├── App.tsx        # Main component (no more auto-mutations)
 └── index.css      # Tailwind + mobile optimizations
 
 e2e/               # Playwright E2E tests
+├── test-utils.ts  # Test storage injection helpers
 ├── accessibility.spec.ts  # WCAG compliance tests
 ├── telemetry.spec.ts     # API contract tests
-└── user-journey.spec.ts  # Full user flows
+└── user-journey.spec.ts  # Full user flows (updated)
 ```
 
 ## Testing Infrastructure
 
 ### Unit Tests (Vitest)
 - Components: Modal, etc.
-- Hooks: useLocalStorage, etc.
+- Hooks: useLocalStorage (now with context)
 - Coverage for all critical paths
 
 ### E2E Tests (Playwright)
-- User journeys (first visit, returning)
+- User journeys (first visit, returning) - now with proper isolation
 - Mobile viewports
 - Keyboard navigation
 - Network failure scenarios
@@ -71,6 +91,12 @@ e2e/               # Playwright E2E tests
 - Error boundary recovery
 - Accessibility (axe-core)
 - Telemetry contract validation
+
+### Test Isolation Strategy
+- Each test gets a fresh storage adapter via `injectTestStorageAdapter`
+- No global state persists between tests
+- Proper timing for state transitions
+- Deterministic test outcomes
 
 ## CI/CD Pipeline
 
@@ -135,15 +161,26 @@ The GitHub Actions workflow:
 
 ## Key Features Implemented
 
-1. **State Persistence**: localStorage with fallbacks
-2. **Telemetry**: Optional backend integration
+1. **State Persistence**: localStorage with context-based adapters
+2. **Telemetry**: Optional backend integration  
 3. **Error Boundaries**: With user reporting
 4. **Accessibility**: WCAG AA compliant
 5. **Mobile Optimization**: Safe areas, dynamic viewport
 6. **Animation System**: Symbolic timing in constants
 7. **Branding Config**: All text/assets centralized
+8. **Test Isolation**: Fresh adapter per test context
 
 ## Critical Design Decisions
+
+### Storage Adapter Pattern
+- Interfaces allow swapping localStorage/memory storage
+- Context injection prevents global state
+- Test isolation via fresh instances
+
+### State Management
+- No automatic mutations in effects
+- User actions drive all state changes
+- Modal state determined by actual data, not timing
 
 ### Why Tailwind v3 (not v4)
 - v4 has PostCSS plugin incompatibility
@@ -161,12 +198,13 @@ The GitHub Actions workflow:
 
 ## Known Edge Cases Handled
 
-1. **localStorage disabled**: Graceful degradation
+1. **localStorage disabled**: Graceful degradation to memory storage
 2. **Network failures**: Telemetry fallback to console
 3. **CORS errors**: Modal still functions
 4. **Reduced motion**: Instant animations
 5. **Mobile keyboards**: Viewport adjustment
 6. **Focus management**: Trap in modal
+7. **Test state leaks**: Prevented via context isolation
 
 ## Performance Optimizations
 
@@ -200,8 +238,8 @@ pnpm run build
 ## Future Considerations
 
 ### State Management
-- Currently using hooks + props
-- Consider Context or XState for complex flows
+- Currently using hooks + props + context
+- Consider Redux/Zustand if complexity grows
 
 ### Internationalization
 - Text in branding.ts ready for i18n
@@ -234,6 +272,22 @@ pnpm exec playwright install --with-deps
 
 # Any CLI tool must use pnpm exec, never npx
 pnpm exec <cli-tool> <args>
+```
+
+## Testing Best Practices
+
+### E2E Test Pattern
+```typescript
+// Always inject fresh storage adapter
+await injectTestStorageAdapter(page, {
+  'fact.rip.visited': 'true', // Optional initial state
+});
+
+// Check state transitions, not just UI
+const storageState = await page.evaluate(() => {
+  const adapter = (window as any).__TEST_STORAGE_ADAPTER__;
+  return adapter.getItem('fact.rip.visited');
+});
 ```
 
 ## Security Considerations
@@ -284,5 +338,7 @@ pnpm exec <cli-tool> <args>
 ✅ Performance budgets
 ✅ Security headers configured
 ✅ Monitoring in place
+✅ Test isolation architecture
+✅ Deterministic state management
 
-This is now production infrastructure, not just a landing page.
+This is now production infrastructure with proper architecture for testability and maintainability.

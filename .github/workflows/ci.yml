@@ -28,6 +28,9 @@ jobs:
     
     - name: Check pnpm-only policy
       run: ./scripts/check-npm-usage.sh
+      
+    - name: Validate lockfile version
+      run: ./scripts/validate-lockfile.sh
     
     - name: Type check  
       run: pnpm exec tsc --noEmit
@@ -42,7 +45,7 @@ jobs:
       run: pnpm exec playwright install --with-deps
       
     - name: E2E tests
-      run: pnpm exec playwright test
+      run: pnpm exec playwright test || exit 1
       
     - name: Upload test results
       if: always()

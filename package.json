@@ -22,7 +22,7 @@
     "typecheck": "tsc -b && eslint .",
     "check:pnpm": "./scripts/check-npm-usage.sh",
     "test:all": "pnpm run check:pnpm && pnpm run typecheck && pnpm run test:run && pnpm run test:e2e",
-    "ci": "pnpm run test:all && pnpm run build",
+    "ci": "set -e && pnpm run test:all && pnpm run build",
     "prepare": "husky"
   },
   "dependencies": {

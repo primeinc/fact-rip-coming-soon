@@ -1,8 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './test-hooks';
+import { initializeTestAdapter } from './test-utils';
 import AxeBuilder from '@axe-core/playwright';
 
 test.describe('accessibility', () => {
   test('should not have any automatically detectable accessibility issues', async ({ page }) => {
+    await initializeTestAdapter(page);
     await page.goto('/');
     
     // Wait for animations to complete
@@ -14,6 +16,7 @@ test.describe('accessibility', () => {
   });
 
   test('should have proper focus management in modal', async ({ page }) => {
+    await initializeTestAdapter(page);
     await page.goto('/');
     
     // Open modal
@@ -38,6 +41,7 @@ test.describe('accessibility', () => {
   });
 
   test('should be navigable with keyboard only', async ({ page }) => {
+    await initializeTestAdapter(page);
     await page.goto('/');
     
     // Tab through all interactive elements
@@ -66,6 +70,7 @@ test.describe('accessibility', () => {
     // Enable prefers-reduced-motion
     await page.emulateMedia({ reducedMotion: 'reduce' });
     
+    await initializeTestAdapter(page);
     await page.goto('/');
     
     // Animations should still complete (but instantly)
@@ -77,6 +82,7 @@ test.describe('accessibility', () => {
   });
 
   test('should have proper ARIA labels', async ({ page }) => {
+    await initializeTestAdapter(page);
     await page.goto('/');
     
     // Check ARIA labels exist
@@ -92,6 +98,7 @@ test.describe('accessibility', () => {
   });
 
   test('should maintain 4.5:1 contrast ratio', async ({ page }) => {
+    await initializeTestAdapter(page);
     await page.goto('/');
     
     // Wait for animations to complete

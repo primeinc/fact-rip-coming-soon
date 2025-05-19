@@ -1,38 +1,28 @@
-import { useState, useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { Title } from "./components/Title";
 import { ProgressBar } from "./components/ProgressBar";
 import { Pulse } from "./components/Pulse";
 import { Seal } from "./components/Seal";
 import { CTAButton } from "./components/CTAButton";
 import { Modal } from "./components/Modal";
-import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useViewportHeight } from "./hooks/useViewportHeight";
 import { useTelemetry } from "./hooks/useTelemetry";
+import { useUserJourney } from "./contexts/UserJourneyContext";
 
 export default function App() {
-  const [hasVisited, setHasVisited] = useLocalStorage('fact.rip.visited', false);
-  const [joinedTimestamp, setJoinedTimestamp] = useLocalStorage<string | null>('fact.rip.joined', null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
+  const { state, dispatch, joinWatchtower, reset } = useUserJourney();
   const { sendEvent } = useTelemetry();
   
   useViewportHeight();
 
-  // Set visited flag on first render
-  useEffect(() => {
-    if (!hasVisited) {
-      setHasVisited(true);
-    }
-  }, [hasVisited, setHasVisited]);
-
   const handleJoinWatchtower = useCallback(async () => {
-    setIsLoading(true);
-    
     const timestamp = new Date().toISOString();
+    
+    // Send telemetry event
     const eventData = {
       timestamp,
       action: 'watchtower_join',
-      returning: hasVisited,
+      returning: state.hasVisited,
       user_agent: navigator.userAgent,
       viewport: {
         width: window.innerWidth,
@@ -41,19 +31,23 @@ export default function App() {
     };
     
     await sendEvent(eventData);
-    setJoinedTimestamp(timestamp);
-    
-    setTimeout(() => {
-      setModalOpen(true);
-      setIsLoading(false);
-    }, 300);
-  }, [hasVisited, sendEvent, setJoinedTimestamp]);
+    joinWatchtower(timestamp);
+  }, [state.hasVisited, sendEvent, joinWatchtower]);
 
-  const handleReset = useCallback(() => {
-    setHasVisited(false);
-    setJoinedTimestamp(null);
-    window.location.reload();
-  }, [setHasVisited, setJoinedTimestamp]);
+  const handleModalClose = useCallback(() => {
+    dispatch({ type: 'CLOSE_MODAL' });
+    // After animation completes, hide the modal
+    setTimeout(() => {
+      dispatch({ type: 'MODAL_HIDDEN' });
+    }, 300);
+  }, [dispatch]);
+
+  const handleReset = useCallback(async () => {
+    await reset();
+    // No reload needed - state is fully managed
+  }, [reset]);
+
+  const isModalOpen = state.modalState !== 'hidden';
 
   return (
     <main className="relative flex flex-col items-center justify-between min-h-[100vh] bg-black text-white" 
@@ -61,22 +55,22 @@ export default function App() {
       
       <div className="w-full flex flex-col items-center justify-center flex-1 px-4 sm:px-6 py-8 sm:py-12">
         <div className="space-y-6 sm:space-y-8 lg:space-y-10 max-w-sm sm:max-w-md md:max-w-lg mx-auto">
-          <Title isReturning={hasVisited} />
+          <Title isReturning={state.hasVisited} />
           <ProgressBar />
           <Pulse />
-          <Seal isReturning={hasVisited} />
+          <Seal isReturning={state.hasVisited} />
         </div>
       </div>
 
       <CTAButton 
         onClick={handleJoinWatchtower}
-        isLoading={isLoading}
+        isLoading={state.isLoading}
       />
       
       <Modal 
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        hasJoined={!!joinedTimestamp}
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        hasJoined={!!state.joinedTimestamp}
         onReset={handleReset}
       />
     </main>

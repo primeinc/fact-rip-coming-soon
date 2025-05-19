@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { storage } from '../utils/storage';
+import { useStorageAdapter } from '../contexts/StorageContext';
+import { createStorage } from '../utils/storage';
 
 export function useLocalStorage<T>(
   key: string,
   initialValue: T
 ): [T, (value: T) => void, () => void] {
+  const adapter = useStorageAdapter();
+  const storage = createStorage(adapter);
+  
   const [storedValue, setStoredValue] = useState<T>(() => {
     const item = storage.get(key);
     if (item) {
