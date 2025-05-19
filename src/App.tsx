@@ -1,9 +1,12 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import Modal from "./Modal";
 
 export default function App() {
   const [isReturningVisitor, setIsReturningVisitor] = useState(false);
   const [ctaClicked, setCtaClicked] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [hasJoined, setHasJoined] = useState(false);
   
   useEffect(() => {
     // Check if user has visited before
@@ -12,6 +15,12 @@ export default function App() {
       setIsReturningVisitor(true);
     } else {
       localStorage.setItem('fact.rip.visited', 'true');
+    }
+    
+    // Check if already joined
+    const joinedTimestamp = localStorage.getItem('fact.rip.joined');
+    if (joinedTimestamp) {
+      setHasJoined(true);
     }
     
     // Add viewport height fix for mobile browsers
@@ -25,19 +34,43 @@ export default function App() {
     return () => window.removeEventListener('resize', setVH);
   }, []);
 
-  const handleJoinWatchtower = () => {
+  const handleJoinWatchtower = async () => {
     setCtaClicked(true);
     
     // Track the interaction
     const timestamp = new Date().toISOString();
-    localStorage.setItem('fact.rip.joined', timestamp);
-    console.log('[FACT.RIP] Watchtower recruitment attempt:', { timestamp, isReturningVisitor });
+    const eventData = {
+      timestamp,
+      action: 'watchtower_join',
+      returning: isReturningVisitor,
+      user_agent: navigator.userAgent,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight
+      }
+    };
     
-    // For now, show modal or redirect
-    // TODO: Actual implementation pending
+    try {
+      // Send to telemetry endpoint if available
+      if (import.meta.env.VITE_TELEMETRY_ENDPOINT) {
+        await fetch(import.meta.env.VITE_TELEMETRY_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(eventData)
+        });
+      }
+    } catch (error) {
+      console.error('[FACT.RIP] Telemetry failed:', error);
+    }
+    
+    // Local storage fallback
+    localStorage.setItem('fact.rip.joined', timestamp);
+    console.log('[FACT.RIP] Watchtower recruitment:', eventData);
+    
     setTimeout(() => {
-      alert('The Watchtower is being established. Your vigilance has been recorded.');
+      setModalOpen(true);
       setCtaClicked(false);
+      setHasJoined(true);
     }, 300);
   };
 
@@ -130,6 +163,12 @@ export default function App() {
           </motion.button>
         </div>
       </div>
+      
+      <Modal 
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        hasJoined={hasJoined}
+      />
     </main>
   );
 }
