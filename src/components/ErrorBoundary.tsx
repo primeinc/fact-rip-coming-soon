@@ -1,5 +1,6 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
+import { BRANDING } from '../config/branding';
 
 interface Props {
   children: ReactNode;
@@ -110,11 +111,10 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <main className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-6">
           <h1 className="text-2xl font-bold mb-4 text-red-500">
-            The Loop Fractures
+            {BRANDING.copy.error.title}
           </h1>
           <p className="text-gray-300 mb-6 max-w-md text-center">
-            An unexpected error has interrupted the surveillance. 
-            The memory persists, but observation has paused.
+            {BRANDING.copy.error.body}
           </p>
           
           {errorId && (
@@ -128,7 +128,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               onClick={this.handleRecovery}
               className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-full transition-colors"
             >
-              Resume Observation
+              {BRANDING.copy.error.resume}
             </button>
             
             {import.meta.env.VITE_ERROR_REPORT_ENDPOINT && (
@@ -141,7 +141,7 @@ export default class ErrorBoundary extends Component<Props, State> {
                     : 'text-red-500 hover:bg-red-600/10'
                 }`}
               >
-                {reportSent ? 'Report Sent' : 'Send Report'}
+                {reportSent ? BRANDING.copy.error.reported : BRANDING.copy.error.report}
               </button>
             )}
           </div>

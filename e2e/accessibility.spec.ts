@@ -5,6 +5,9 @@ test.describe('accessibility', () => {
   test('should not have any automatically detectable accessibility issues', async ({ page }) => {
     await page.goto('/');
     
+    // Wait for animations to complete
+    await page.waitForTimeout(3000);
+    
     const accessibilityScanResults = await new AxeBuilder({ page }).analyze();
     
     expect(accessibilityScanResults.violations).toEqual([]);
@@ -15,6 +18,10 @@ test.describe('accessibility', () => {
     
     // Open modal
     await page.click('button:has-text("Join the Watchtower")');
+    
+    // Wait for modal to appear and focus to be set
+    await page.waitForSelector('[role="dialog"]');
+    await page.waitForTimeout(100); // Allow focus to settle
     
     // Focus should be trapped in modal
     const activeElement = await page.evaluate(() => document.activeElement?.tagName);
@@ -86,6 +93,9 @@ test.describe('accessibility', () => {
 
   test('should maintain 4.5:1 contrast ratio', async ({ page }) => {
     await page.goto('/');
+    
+    // Wait for animations to complete
+    await page.waitForTimeout(3000);
     
     // This is a placeholder - in production you'd use axe-core contrast checks
     const contrastResults = await new AxeBuilder({ page })

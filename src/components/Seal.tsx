@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ANIMATIONS } from "../constants/animations";
+import { BRANDING } from "../config/branding";
 
 interface SealProps {
   isReturning: boolean;
@@ -9,7 +10,7 @@ export function Seal({ isReturning }: SealProps) {
   return (
     <div className="flex justify-center">
       <motion.img
-        src="/custodes-seal.svg"
+        src={BRANDING.assets.seal}
         alt="Custodes Engine Verified Seal"
         initial={{ opacity: 0, scale: 0.6 }}
         animate={{ opacity: 1, scale: 1 }}

@@ -34,18 +34,23 @@ test.describe('telemetry contract', () => {
   });
 
   test('should handle telemetry endpoint failure gracefully', async ({ page }) => {
+    // Set mock endpoint
+    await page.addInitScript(() => {
+      // @ts-expect-error - Mock environment variable
+      window.__VITE_TELEMETRY_ENDPOINT__ = 'http://localhost:5173/api/events';
+    });
+    
     // Mock endpoint failure
     await page.route('**/api/events', route => route.abort());
     
-    await page.goto('/');
-    
     let errorLogged = false;
     page.on('console', msg => {
-      if (msg.text().includes('Telemetry') && msg.text().includes('Failed')) {
+      if (msg.text().includes('[Telemetry] Failed')) {
         errorLogged = true;
       }
     });
     
+    await page.goto('/');
     await page.click('button:has-text("Join the Watchtower")');
     await page.waitForTimeout(1000);
     

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { ANIMATIONS } from "../constants/animations";
+import { BRANDING } from "../config/branding";
 
 interface ModalProps {
   isOpen: boolean;
@@ -17,10 +18,10 @@ export function Modal({ isOpen, onClose, hasJoined, onReset }: ModalProps) {
     if (isOpen) {
       previousActiveElement.current = document.activeElement;
       document.body.style.overflow = 'hidden';
-      // Focus delay to ensure modal is mounted
-      setTimeout(() => {
+      // Focus delay to ensure modal is mounted and transition completes
+      requestAnimationFrame(() => {
         modalRef.current?.focus();
-      }, 50);
+      });
     } else {
       document.body.style.overflow = '';
       (previousActiveElement.current as HTMLElement)?.focus();
@@ -67,22 +68,22 @@ export function Modal({ isOpen, onClose, hasJoined, onReset }: ModalProps) {
         aria-labelledby="modal-title"
       >
         <h2 id="modal-title" className="text-xl font-bold mb-4 text-red-500">
-          {hasJoined ? "Already Watching" : "Watchtower Activated"}
+          {hasJoined ? BRANDING.copy.modal.title.returning : BRANDING.copy.modal.title.new}
         </h2>
         
         <p className="text-gray-300 mb-6">
           {hasJoined 
-            ? "Your vigilance continues. The loop persists through observation."
-            : "Your surveillance has begun. The accountability engine marks your witness."
+            ? BRANDING.copy.modal.body.returning
+            : BRANDING.copy.modal.body.new
           }
         </p>
         
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded transition-colors"
+            className="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded transition-colors"
           >
-            Continue
+            {BRANDING.copy.button.continue}
           </button>
           
           {hasJoined && onReset && (
@@ -90,7 +91,7 @@ export function Modal({ isOpen, onClose, hasJoined, onReset }: ModalProps) {
               onClick={onReset}
               className="px-4 py-2 border border-red-600/50 text-red-500 hover:bg-red-600/10 rounded transition-colors"
             >
-              Reset
+              {BRANDING.copy.button.reset}
             </button>
           )}
         </div>

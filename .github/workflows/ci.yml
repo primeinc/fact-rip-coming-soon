@@ -26,7 +26,10 @@ jobs:
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
     
-    - name: Type check
+    - name: Check pnpm-only policy
+      run: ./scripts/check-npm-usage.sh
+    
+    - name: Type check  
       run: pnpm exec tsc --noEmit
     
     - name: Lint
@@ -72,6 +75,7 @@ jobs:
         path: dist
         
     - name: Deploy to Netlify
+      id: deploy
       uses: nwtgck/actions-netlify@v2.0
       with:
         publish-dir: './dist'
@@ -81,3 +85,22 @@ jobs:
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        
+    - uses: pnpm/action-setup@v2
+      with:
+        version: 8
+        
+    - name: Use Node.js 20
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20
+        cache: 'pnpm'
+    
+    - name: Install dependencies for smoke test
+      run: pnpm install --frozen-lockfile
+      
+    - name: Smoke test deployed URL
+      run: |
+        SMOKE_TEST_URL=${{ steps.deploy.outputs.deploy-url }} pnpm exec node scripts/smoke-test-production.js
+      env:
+        SMOKE_TEST_URL: ${{ steps.deploy.outputs.deploy-url }}

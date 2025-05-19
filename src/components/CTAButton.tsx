@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ANIMATIONS } from "../constants/animations";
+import { BRANDING } from "../config/branding";
 
 interface CTAButtonProps {
   onClick: () => void;
@@ -26,7 +27,7 @@ export function CTAButton({ onClick, isLoading }: CTAButtonProps) {
                      disabled:cursor-not-allowed transition-all
                      shadow-lg ${isLoading ? 'shadow-red-600/40' : 'shadow-white/20'}`}
         >
-          {isLoading ? "Registering..." : "Join the Watchtower"}
+          {isLoading ? BRANDING.copy.button.loading : BRANDING.copy.button.cta}
         </motion.button>
       </div>
     </div>

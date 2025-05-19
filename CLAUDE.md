@@ -2,6 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## CRITICAL: pnpm-Only Repository
+
+**THIS REPOSITORY USES pnpm EXCLUSIVELY**
+- DO NOT use npm or npx under any circumstances
+- All dependencies must be installed with pnpm
+- All scripts must be run with pnpm or pnpm exec 
+- Any use of npm/npx is a blocking architectural defect
+- CI/CD will fail if npm/npx is detected
+
 ## Repository Overview
 
 Single-page React app for fact.rip - a civic memory utility. The page serves as a recruitment interface for the "Watchtower" surveillance network. Fully production-ready with comprehensive testing and deployment automation.
@@ -86,6 +95,44 @@ VITE_ENABLE_TELEMETRY       # Feature flag
 VITE_ENABLE_ERROR_REPORTING # Feature flag
 ```
 
+## Package Management (Strictly pnpm)
+
+### pnpm-Only Policy
+- This repository requires pnpm v8+  
+- npm and npx are **not allowed**
+- CI/CD enforces pnpm-only usage
+- All developers must use pnpm exclusively
+
+### Common Commands
+```bash
+# Install dependencies (lockfile enforced)
+pnpm install --frozen-lockfile
+
+# Add new dependency
+pnpm add <package>
+pnpm add -D <dev-package>
+
+# Run any CLI tool
+pnpm exec <tool> <args>      # Instead of npx
+pnpm exec tailwindcss init   # Example
+pnpm exec playwright install # Example
+
+# Run scripts
+pnpm run <script>           # Instead of npm run
+pnpm dev                    # Shorthand works
+
+# Clean install
+rm -rf node_modules
+pnpm install
+```
+
+### CI/CD Enforcement  
+The GitHub Actions workflow:
+1. Uses pnpm/action-setup
+2. Caches pnpm dependencies
+3. Runs all commands with pnpm
+4. Fails on any npm/npx usage
+
 ## Key Features Implemented
 
 1. **State Persistence**: localStorage with fallbacks
@@ -167,17 +214,26 @@ pnpm run build
 ## Development Workflow
 
 ```bash
+# START: Install dependencies (never use npm install)
+pnpm install
+
 # Start dev server
 pnpm run dev
 
 # Run all tests
 pnpm run test:all
 
-# E2E tests with UI
+# E2E tests with UI  
 pnpm run test:e2e:ui
 
 # Type check and lint
 pnpm run typecheck
+
+# Install Playwright (never use npx playwright)
+pnpm exec playwright install --with-deps
+
+# Any CLI tool must use pnpm exec, never npx
+pnpm exec <cli-tool> <args>
 ```
 
 ## Security Considerations

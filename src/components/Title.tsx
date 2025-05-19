@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ANIMATIONS } from "../constants/animations";
+import { BRANDING } from "../config/branding";
 
 interface TitleProps {
   isReturning: boolean;
@@ -12,9 +13,9 @@ export function Title({ isReturning }: TitleProps) {
       animate={{ y: 0, opacity: 1 }}
       transition={ANIMATIONS.title}
       className="text-center text-[28px] sm:text-[36px] md:text-[48px] lg:text-[56px] 
-                 leading-[1.1] font-bold tracking-tight"
+                 leading-[1.1] font-bold tracking-tight text-white"
     >
-      {isReturning ? "The Loop Persists." : "The Loop Closes."}
+      {isReturning ? BRANDING.copy.title.returning : BRANDING.copy.title.firstVisit}
     </motion.h1>
   );
 }
