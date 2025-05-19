@@ -1,0 +1,16 @@
+{
+  "name": "fact.rip",
+  "short_name": "fact.rip",
+  "description": "Civic memory utility engineered to document accountability events",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#DC2626",
+  "icons": [
+    {
+      "src": "/custodes-seal.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
