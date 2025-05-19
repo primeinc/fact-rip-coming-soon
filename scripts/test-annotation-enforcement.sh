@@ -1,6 +1,5 @@
-#!/bin/bash
-# This is a test script that expects some commands to fail
-# Don't use strict error handling
+#!/usr/bin/env bash
+set -euo pipefail
 
 # Test that the annotation enforcement script works correctly
 # This script EXPECTS failures on test cases and treats them as success
@@ -35,7 +34,7 @@ fi
 # Test 2: File with only annotated exceptions should pass
 echo ""
 echo "Test 2: Checking that annotated exceptions are allowed..."
-mkdir -p test
+mkdir -p test || true
 echo "DEBUG: Creating test/temp-annotated.md"
 cat > test/temp-annotated.md << 'EOF'
 # Test Annotated Only
@@ -55,7 +54,7 @@ else
     echo "❌ FAILED: Script rejected properly annotated exceptions"
     increment_failed
 fi
-rm -f test/temp-annotated.md
+rm -f test/temp-annotated.md || true
 
 # Test 3: File with no npm/npx should pass
 echo ""
@@ -78,7 +77,7 @@ else
     echo "❌ FAILED: Script rejected clean pnpm-only file"
     increment_failed
 fi
-rm -f test/temp-clean.md
+rm -f test/temp-clean.md || true
 
 # Test 4: Mixed file should report only unannotated violations
 echo ""
@@ -107,7 +106,7 @@ else
     echo "Output was: $OUTPUT"
     increment_failed
 fi
-rm -f test/temp-mixed.md
+rm -f test/temp-mixed.md || true
 
 # Summary
 echo ""

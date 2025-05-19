@@ -12,5 +12,5 @@ echo "Step 3"
 count=$(wc -l < /tmp/test-find.out)
 echo "Found $count files"
 echo "Step 4"
-rm -f /tmp/test-find.out
+rm -f /tmp/test-find.out || true
 echo "Done"

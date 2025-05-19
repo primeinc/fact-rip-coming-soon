@@ -8,7 +8,7 @@ count=0
 echo "Testing file reading in CI..."
 
 # Create a test file
-cat > /tmp/test.txt << EOF
+cat > /tmp/test.txt << EOF || true
 line1
 line2  
 line3
@@ -25,7 +25,7 @@ echo "Method 1 total lines: $count"
 echo ""
 echo "=== Method 2: cat with pipe ==="
 count=0
-cat /tmp/test.txt | while IFS= read -r line; do
+cat /tmp/test.txt 2>/dev/null | while IFS= read -r line; do
     count=$((count + 1))
     echo "Method 2 read line $count: '$line'"
 done
@@ -37,7 +37,7 @@ count=0
 while IFS= read -r line; do
     count=$((count + 1))
     echo "Method 3 read line $count: '$line'"
-done < <(cat /tmp/test.txt)
+done < <(cat /tmp/test.txt 2>/dev/null)
 echo "Method 3 total lines: $count"
 
 echo ""
@@ -53,8 +53,8 @@ echo "Method 4 total lines: $count"
 
 echo ""
 echo "=== Test content is: ==="
-cat /tmp/test.txt
+cat /tmp/test.txt 2>/dev/null
 echo "=== end of test content ==="
 
-rm -f /tmp/test.txt
+rm -f /tmp/test.txt || true
 echo "Test complete"
