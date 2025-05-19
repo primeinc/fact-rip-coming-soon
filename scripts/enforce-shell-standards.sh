@@ -46,7 +46,9 @@ for script in $SHELL_SCRIPTS; do
     # Check for environment variable usage without defaults
     ENV_USAGE=$(grep -oE '\$\{[A-Z_]+\}' "$script" || true)
     for env in $ENV_USAGE; do
-        if ! grep -q "${env%\}*:-" "$script"; then
+        # Remove the ${} wrapper to get the variable name
+        var_name=$(echo "$env" | sed 's/\${\(.*\)}/\1/')
+        if ! grep -q "\${${var_name}:-" "$script"; then
             echo "⚠️  Environment variable $env used without default in $script"
         fi
     done

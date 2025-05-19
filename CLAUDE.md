@@ -154,6 +154,10 @@ This is a well-architected React app with good CI/CD practices, but:
 
 Use this codebase as a good starting point, but don't trust the "production-ready" claims without closing all identified gaps.
 
+## Development Guidelines
+
+- test locally before CI or deploying
+
 ---
 Last Updated: 2025-05-19
 Status: CI Theater - Looks good but has critical bypass vectors
