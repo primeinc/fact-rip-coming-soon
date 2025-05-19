@@ -1,3 +1,32 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Mobile-first optimizations */
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  body {
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+  
+  /* Ensure safe areas are respected */
+  @supports (padding: env(safe-area-inset-top)) {
+    .pb-safe {
+      padding-bottom: calc(env(safe-area-inset-bottom) + 2rem);
+    }
+  }
+  
+  /* Prevent iOS bounce and scrolling */
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+}
