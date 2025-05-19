@@ -125,7 +125,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        device: ['iPhone 13', 'Pixel 5']
+        project: ['Mobile Chrome', 'Mobile Safari']
     
     steps:
       - uses: actions/checkout@v4
@@ -146,19 +146,16 @@ jobs:
       - name: Install Playwright Browsers
         run: pnpm exec playwright install --with-deps chromium webkit
 
+      - name: Validate project exists
+        run: ./scripts/validate-playwright-projects.sh "${{ matrix.project }}"
+        
       - name: Run mobile E2E tests
-        run: |
-          if [[ "${{ matrix.device }}" == "iPhone 13" ]]; then
-            projectName="Mobile Safari"
-          else
-            projectName="Mobile Chrome"
-          fi
-          pnpm exec playwright test --project="${projectName}"
+        run: pnpm exec playwright test --project="${{ matrix.project }}"
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report-mobile-${{ matrix.device }}
+          name: playwright-report-${{ matrix.project }}
           path: playwright-report/
           retention-days: 30
 
