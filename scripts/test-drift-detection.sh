@@ -29,8 +29,8 @@ echo -e "\nTest 2: Hardcoded value detection"
 (
     export ALLOW_LOCAL_TEST=true
     
-    # Create test file with hardcoded value  
-    TEST_FILE="$SCRIPT_DIR/test-hardcoded.sh"
+    # Create test file with hardcoded value - must be in scripts/ and not start with test-
+    TEST_FILE="$SCRIPT_DIR/hardcoded-check.sh"
     echo '#!/usr/bin/env bash' > "$TEST_FILE"
     # Use the actual production domain from config
     if [ -f "config/deployment.json" ]; then
