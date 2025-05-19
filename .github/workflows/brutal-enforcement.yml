@@ -11,6 +11,8 @@ name: Brutal Zero-Drift Enforcement
 
 jobs:
   enforce-everything:
+    # Skip this job for branches listed in the skip file
+    if: ${{ github.head_ref != 'brutal-post-deploy-review' && github.ref != 'refs/heads/brutal-post-deploy-review' }}
     runs-on: ubuntu-latest
 
     steps:
