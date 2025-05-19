@@ -11,16 +11,25 @@ echo ""
 TESTS_PASSED=0
 TESTS_FAILED=0
 
+# Function to safely increment counters
+increment_passed() {
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+}
+
+increment_failed() {
+    TESTS_FAILED=$((TESTS_FAILED + 1))
+}
+
 # Test 1: File with violations should fail
 echo "Test 1: Checking that violations are detected..."
 echo "DEBUG: Looking for test/test-annotation-system.md"
 ls -la test/test-annotation-system.md || echo "File not found"
 if ALLOW_LOCAL_TEST=true VERBOSE=true ./scripts/enforce-pnpm-with-annotations.sh test/test-annotation-system.md 2>&1; then
     echo "❌ FAILED: Script did not detect violations in test file"
-    ((TESTS_FAILED++))
+    increment_failed
 else
     echo "✅ PASSED: Script correctly detected violations"
-    ((TESTS_PASSED++))
+    increment_passed
 fi
 
 # Test 2: File with only annotated exceptions should pass
@@ -41,10 +50,10 @@ EOF
 echo "DEBUG: Running script on test/temp-annotated.md"
 if ALLOW_LOCAL_TEST=true VERBOSE=true ./scripts/enforce-pnpm-with-annotations.sh test/temp-annotated.md; then
     echo "✅ PASSED: Script correctly allows annotated exceptions"
-    ((TESTS_PASSED++))
+    increment_passed
 else
     echo "❌ FAILED: Script rejected properly annotated exceptions"
-    ((TESTS_FAILED++))
+    increment_failed
 fi
 rm -f test/temp-annotated.md
 
@@ -64,10 +73,10 @@ EOF
 echo "DEBUG: Running script on test/temp-clean.md"
 if ALLOW_LOCAL_TEST=true VERBOSE=true ./scripts/enforce-pnpm-with-annotations.sh test/temp-clean.md; then
     echo "✅ PASSED: Script correctly passes clean files"
-    ((TESTS_PASSED++))
+    increment_passed
 else
     echo "❌ FAILED: Script rejected clean pnpm-only file"
-    ((TESTS_FAILED++))
+    increment_failed
 fi
 rm -f test/temp-clean.md
 
@@ -92,11 +101,11 @@ OUTPUT=$(ALLOW_LOCAL_TEST=true VERBOSE=true ./scripts/enforce-pnpm-with-annotati
 echo "DEBUG: Output was: $OUTPUT"
 if echo "$OUTPUT" | grep -q "Found 1 unannotated npm/npx usage"; then
     echo "✅ PASSED: Script correctly found 1 violation in mixed file"
-    ((TESTS_PASSED++))
+    increment_passed
 else
     echo "❌ FAILED: Script did not correctly handle mixed file"
     echo "Output was: $OUTPUT"
-    ((TESTS_FAILED++))
+    increment_failed
 fi
 rm -f test/temp-mixed.md
 

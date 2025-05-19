@@ -31,7 +31,7 @@ check_file() {
     
     # Read file using a different approach that works in CI
     while IFS= read -r line; do
-        ((line_number++))
+        line_number=$((line_number + 1))
         [ "$VERBOSE" = "true" ] && [ $line_number -le 5 ] && echo "DEBUG: Processing line $line_number: $line"
         
         # Detect code block boundaries
