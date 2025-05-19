@@ -6,8 +6,7 @@
       "scripts/test-enforcement-scripts.sh",
       "scripts/check-npm-usage.sh",
       "scripts/test-annotation-enforcement.sh",
-      "scripts/enforce-pnpm-with-annotations.sh",
-      "scripts/enforce-pnpm-with-annotations-v2.sh"
+      "scripts/enforce-pnpm-with-annotations.sh"
     ],
     "hardcoded_values": [
       "scripts/enforce-all.js",
