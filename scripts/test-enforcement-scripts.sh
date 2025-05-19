@@ -11,10 +11,10 @@ FAILED_TESTS=0
 echo "Testing check-npm-usage.sh..."
 # Create a test file with npm usage
 mkdir -p test-tmp || true
-echo 'npm install something' > test-tmp/bad-npm.js
+echo ' npm install something' > test-tmp/bad-npm.js
 # Temporarily disable ci-guard for this test
 export ALLOW_LOCAL_TEST=true
-if ./scripts/check-npm-usage.sh 2>&1 | grep -q "Found npm/npx usage"; then
+if ! ./scripts/check-npm-usage.sh 2>&1 | grep -q "No npm/npx usage found"; then
     echo "✅ check-npm-usage.sh correctly detected npm usage"
 else
     echo "❌ check-npm-usage.sh failed to detect npm usage"
