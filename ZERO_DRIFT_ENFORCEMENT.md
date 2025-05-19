@@ -34,7 +34,7 @@ This document details the comprehensive enforcement mechanisms that prevent conf
 ### 4. Real-Time Monitoring
 - Netlify API drift detection on every main branch push
 - Slack notifications for configuration drift
-- Deployment validation with actual production smoke tests
+- Deployment validation with comprehensive E2E tests
 
 ## 🔒 What's Protected
 

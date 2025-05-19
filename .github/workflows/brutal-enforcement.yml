@@ -79,6 +79,9 @@ jobs:
           pnpm test:all
           
       - name: Verify CI scripts are bulletproof
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: |
           pnpm test:enforcement
 

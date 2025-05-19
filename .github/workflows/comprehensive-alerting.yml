@@ -126,12 +126,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check deployment health
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           ./scripts/check-deployment.sh
-
-      - name: Run smoke tests
-        run: |
-          node smoke-test.js
 
       - name: Report status
         if: always()

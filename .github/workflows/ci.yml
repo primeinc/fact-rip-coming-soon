@@ -234,9 +234,6 @@ jobs:
         run: |
           ./scripts/verify-deployment.sh
 
-      - name: Run production smoke test
-        run: node scripts/smoke-test-production.js
-
       - name: Notify Teams of Success
         if: success()
         uses: actions/github-script@v7

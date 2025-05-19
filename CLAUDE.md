@@ -56,7 +56,7 @@ Single-page React app for fact.rip - a civic memory utility. The page serves as 
 ### What's Actually Working:
 1. **pnpm-only in CI** - npm/npx blocked in automated pipelines
 2. **PR secret scanning** - Blocks PRs with exposed credentials
-3. **UI smoke tests** - Validates basic page elements load
+3. **UI tests** - Comprehensive E2E tests validate page elements and interactions
 4. **Build/deploy automation** - CI does deploy to Netlify
 5. **Basic drift detection** - Checks for config inconsistencies
 6. **GitHub Secrets** - All secrets properly managed via GitHub

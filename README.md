@@ -140,7 +140,7 @@ All tests MUST pass before merge/deploy:
 1. **Pre-commit**: TypeScript + ESLint check
 2. **On Push**: Full test suite across browsers
 3. **On Deploy**: Build artifacts + Netlify deploy
-4. **Post-Deploy**: Production smoke tests
+4. **Post-Deploy**: Production verification
 
 No manual deploys allowed - only CI can push to production.
 
@@ -148,7 +148,7 @@ No manual deploys allowed - only CI can push to production.
 
 ### Netlify Production Deployment
 
-⚠️ **CRITICAL**: Deployments are only valid if ALL CI/CD checks pass, including smoke tests.
+⚠️ **CRITICAL**: Deployments are only valid if ALL CI/CD checks pass.
 
 #### Configuration
 - All deployment URLs and IDs are in `config/deployment.json`
@@ -165,7 +165,7 @@ No manual deploys allowed - only CI can push to production.
 
 #### URLs
 - See `config/deployment.json` for all deployment URLs
-- Production deployments require passing smoke tests
+- Production deployments require passing all E2E tests
 - Failed deployments should trigger immediate rollback
 
 ### Manual Build

@@ -41,8 +41,8 @@ DEPLOY_URL=$(echo $DEPLOY_INFO | jq -r '.deploy_url')
 
 echo "Latest deploy: $DEPLOY_ID (state: $DEPLOY_STATE)"
 
-# Run smoke test on production URL
-echo "🔍 Running production smoke test..."
+# Test production URL
+echo "🔍 Testing production site..."
 HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$EXPECTED_URL")
 
 if [ "$HTTP_STATUS" -ne 200 ]; then
