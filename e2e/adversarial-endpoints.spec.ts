@@ -65,16 +65,23 @@ test.describe('adversarial endpoint testing', () => {
       waitUntil: 'networkidle'
     });
 
-    // Trigger an error in the app
+    // Force an error in React by breaking a component
     await page.evaluate(() => {
-      // Create an error that will be caught by error boundary
-      const errorDiv = document.createElement('div');
-      errorDiv.id = 'error-trigger';
-      document.body.appendChild(errorDiv);
-      
-      // Force React error
-      window.dispatchEvent(new Event('error'));
+      // Find a React component and force it to error
+      const button = document.querySelector('button');
+      if (button) {
+        // Override click handler to throw
+        Object.defineProperty(button, 'onclick', {
+          get() {
+            throw new Error('Forced test error');
+          }
+        });
+      }
     });
+    
+    // Now click the button to trigger the error
+    const button = page.locator('button').first();
+    await button.click();
     
     // Wait for React to handle the error
     await page.waitForTimeout(500);
@@ -85,8 +92,8 @@ test.describe('adversarial endpoint testing', () => {
     });
     console.log('Page text after error:', errorText);
 
-    // Look for any error indication
-    await expect(page.locator('text=/error|fractur|malfunction/i')).toBeVisible({timeout: 2000});
+    // Look for the actual error title from the app
+    await expect(page.locator('text=The Loop Fractures')).toBeVisible({timeout: 2000});
 
     // Click send report if available
     const reportButton = page.locator('button:has-text("Send Report")');
@@ -169,16 +176,23 @@ test.describe('adversarial endpoint testing', () => {
 
     await page.goto('/');
 
-    // Trigger error
+    // Force an error in React by breaking a component
     await page.evaluate(() => {
-      // Create an error that will be caught by error boundary
-      const errorDiv = document.createElement('div');
-      errorDiv.id = 'error-trigger';
-      document.body.appendChild(errorDiv);
-      
-      // Force React error
-      window.dispatchEvent(new Event('error'));
+      // Find a React component and force it to error
+      const button = document.querySelector('button');
+      if (button) {
+        // Override click handler to throw
+        Object.defineProperty(button, 'onclick', {
+          get() {
+            throw new Error('Forced test error');
+          }
+        });
+      }
     });
+    
+    // Now click the button to trigger the error
+    const button = page.locator('button').first();
+    await button.click();
     
     // Wait for React to handle the error
     await page.waitForTimeout(500);
@@ -189,8 +203,8 @@ test.describe('adversarial endpoint testing', () => {
     });
     console.log('Page text after error:', errorText);
 
-    // Look for any error indication
-    await expect(page.locator('text=/error|fractur|malfunction|resume/i')).toBeVisible({timeout: 2000});
+    // Look for the actual error title
+    await expect(page.locator('text=The Loop Fractures')).toBeVisible({timeout: 2000});
 
     // Recovery should work
     const recoveryButton = page.locator('button:has-text("Resume Observation")');

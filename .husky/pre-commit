@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/bash
 
 pnpm run check:pnpm
 ./scripts/check-no-secrets.sh

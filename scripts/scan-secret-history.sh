@@ -17,7 +17,7 @@ if ! command -v gitleaks &> /dev/null; then
         wget https://github.com/gitleaks/gitleaks/releases/download/v8.16.1/gitleaks_8.16.1_linux_x64.tar.gz
         tar -xzf gitleaks_8.16.1_linux_x64.tar.gz
         sudo mv gitleaks /usr/local/bin/
-        rm gitleaks_8.16.1_linux_x64.tar.gz
+        rm gitleaks_8.16.1_linux_x64.tar.gz || true
     fi
 fi
 

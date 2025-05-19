@@ -45,7 +45,15 @@ fi
 # Check for hardcoded values in shell scripts
 echo "🔍 Checking for hardcoded values in shell scripts..."
 
-PATTERNS="${CONFIG_DRIFT_PATTERNS:-sparkly-bombolone-c419df|fact\.rip|netlify\.app}"
+# Use deployment config values to build pattern dynamically
+if [ ! -z "$SITE_NAME" ] && [ ! -z "$PROD_URL" ]; then
+    # Extract domain from production URL
+    DOMAIN=$(echo "$PROD_URL" | sed 's|https://||' | sed 's|/.*||')
+    PATTERNS="${CONFIG_DRIFT_PATTERNS:-$SITE_NAME|$DOMAIN}"
+else
+    # Fallback to generic patterns if config not available
+    PATTERNS="${CONFIG_DRIFT_PATTERNS:-netlify\.app}"
+fi
 HARDCODED_URLS=$(grep -r "$PATTERNS" scripts/ --exclude="detect-config-drift.sh" || true)
 if [ ! -z "$HARDCODED_URLS" ]; then
     echo "❌ Found hardcoded URLs in scripts:"

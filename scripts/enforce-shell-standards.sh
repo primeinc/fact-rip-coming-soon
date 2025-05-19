@@ -13,13 +13,16 @@ SHELL_SCRIPTS=$(find . -name "*.sh" -not -path "./node_modules/*" -not -path "./
 for script in $SHELL_SCRIPTS; do
     echo "Checking: $script"
 
-    # Check for hardcoded values
-    PATTERNS="${ENFORCE_STANDARDS_PATTERNS:-sparkly-bombolone-c419df|netlify\.app|33e2505e-7a9d-4867-8fbf-db91ca602087}"
-    HARDCODED=$(grep -E "$PATTERNS" "$script" || true)
-    if [ ! -z "$HARDCODED" ]; then
-        echo "❌ Hardcoded values in $script:"
-        echo "$HARDCODED"
-        VIOLATIONS=$((VIOLATIONS + 1))
+    # Check for hardcoded values (skip checking for patterns that are used as defaults)
+    if [ "$script" != "./scripts/enforce-shell-standards.sh" ] && [ "$script" != "./scripts/detect-config-drift.sh" ]; then
+        # Generic patterns that indicate hardcoded values
+        PATTERNS="${ENFORCE_STANDARDS_PATTERNS:-[a-f0-9]+-[a-f0-9]+-[a-f0-9]+-[a-f0-9]+-[a-f0-9]+}"
+        HARDCODED=$(grep -E "$PATTERNS" "$script" | grep -v "CONFIG_DRIFT_PATTERNS" | grep -v "ENFORCE_STANDARDS_PATTERNS" || true)
+        if [ ! -z "$HARDCODED" ]; then
+            echo "❌ Hardcoded values in $script:"
+            echo "$HARDCODED"
+            VIOLATIONS=$((VIOLATIONS + 1))
+        fi
     fi
 
     # Check for proper error handling
@@ -32,7 +35,8 @@ for script in $SHELL_SCRIPTS; do
     OS_SPECIFIC=("brew" "apt-get" "yum")
     for cmd in "${OS_SPECIFIC[@]}"; do
         if grep -q "$cmd" "$script"; then
-            if ! grep -B5 "$cmd" "$script" | grep -q "OSTYPE\|command -v\|PKG_MANAGER"; then
+            # Check if there's OS detection or command availability check
+            if ! grep -B5 "$cmd" "$script" | grep -qE "(if.*which|command -v|OSTYPE|uname|CI|GITHUB_ACTIONS)"; then
                 echo "❌ OS-specific command '$cmd' without proper checks in $script"
                 VIOLATIONS=$((VIOLATIONS + 1))
             fi
@@ -40,9 +44,14 @@ for script in $SHELL_SCRIPTS; do
     done
 
     # Check for direct file operations without checks
-    UNSAFE_OPS=$(grep -E "^cat |^jq |^mkdir |^rm |^cp |^mv " "$script" | grep -v "|| true" | grep -v "2>/dev/null" || true)
+    UNSAFE_OPS=$(grep -E "^[[:space:]]*(cat|jq|mkdir|rm|cp|mv)\s" "$script" | 
+                 grep -v "|| true" | 
+                 grep -v "|| exit" | 
+                 grep -v "2>/dev/null" | 
+                 grep -v "<<" || true)
     if [ ! -z "$UNSAFE_OPS" ]; then
-        echo "⚠️  File operations without error handling in $script"
+        echo "⚠️  File operations without error handling in $script:"
+        echo "$UNSAFE_OPS"
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
 

@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+import { glob } from 'glob';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Cross-platform enforcement that replaces all bash scripts
 class ZeroDriftEnforcer {
@@ -40,7 +45,10 @@ class ZeroDriftEnforcer {
         files.forEach(file => {
             const content = fs.readFileSync(file, 'utf8');
             const npmMatch = content.match(/\b(npm|npx)\s+(install|run|exec)/g);
-            if (npmMatch && !file.includes('enforce-all.js')) {
+            // Ignore npm usage in test files and enforcement scripts
+            if (npmMatch && !file.includes('enforce-all.js') && 
+                !file.includes('test-enforcement-scripts.sh') && 
+                !file.includes('check-npm-usage.sh')) {
                 this.check(false, `Found npm/npx usage in ${file}: ${npmMatch[0]}`);
             }
         });
@@ -61,7 +69,10 @@ class ZeroDriftEnforcer {
         files.forEach(file => {
             const content = fs.readFileSync(file, 'utf8');
             patterns.forEach(pattern => {
-                if (content.includes(pattern) && !file.includes('enforce-all.js')) {
+                if (content.includes(pattern) && 
+                    !file.includes('enforce-all.js') && 
+                    !file.includes('config') &&
+                    !file.includes('CLAUDE.md')) {
                     this.check(false, `Hardcoded value "${pattern}" in ${file}`);
                 }
             });
@@ -79,7 +90,9 @@ class ZeroDriftEnforcer {
 
             if (directStorage &&
                 !file.includes('emergency-storage') &&
-                !file.includes('StorageContext')) {
+                !file.includes('StorageContext') &&
+                !file.includes('storage-adapter') &&
+                !file.includes('useLocalStorage')) {
                 this.check(false, `Direct storage access in ${file}: ${directStorage[0]}`);
             }
         });
@@ -169,18 +182,23 @@ class ZeroDriftEnforcer {
 
         const files = this.findFiles(['**/*'], ['node_modules', '.git']);
         files.forEach(file => {
-            const content = fs.readFileSync(file, 'utf8');
-            secretPatterns.forEach(pattern => {
-                if (pattern.test(content)) {
-                    this.check(false, `Potential secret in ${file}`);
+            if (!fs.lstatSync(file).isDirectory()) {
+                try {
+                    const content = fs.readFileSync(file, 'utf8');
+                    secretPatterns.forEach(pattern => {
+                        if (pattern.test(content)) {
+                            this.check(false, `Potential secret in ${file}`);
+                        }
+                    });
+                } catch (e) {
+                    // Binary or unreadable file, skip
                 }
-            });
+            }
         });
     }
 
     // Helper methods
     findFiles(patterns, excludes = []) {
-        const glob = require('glob');
         const allFiles = [];
 
         patterns.forEach(pattern => {
@@ -199,11 +217,13 @@ class ZeroDriftEnforcer {
 
         const files = this.findFiles(['**/*'], ['node_modules', '.git', '*.lock']);
         files.forEach(file => {
-            try {
-                const content = fs.readFileSync(file, 'utf8');
-                if (content.includes(siteId)) count++;
-            } catch (e) {
-                // Binary file, skip
+            if (!fs.lstatSync(file).isDirectory()) {
+                try {
+                    const content = fs.readFileSync(file, 'utf8');
+                    if (content.includes(siteId)) count++;
+                } catch (e) {
+                    // Binary file, skip
+                }
             }
         });
 

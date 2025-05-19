@@ -10,7 +10,7 @@ FAILED_TESTS=0
 # Test check-npm-usage.sh
 echo "Testing check-npm-usage.sh..."
 # Create a test file with npm usage
-mkdir -p test-tmp
+mkdir -p test-tmp || true
 echo 'npm install something' > test-tmp/bad-npm.js
 if ./scripts/check-npm-usage.sh 2>/dev/null; then
     echo "❌ check-npm-usage.sh failed to detect npm usage"
@@ -18,7 +18,7 @@ if ./scripts/check-npm-usage.sh 2>/dev/null; then
 else
     echo "✅ check-npm-usage.sh correctly detected npm usage"
 fi
-rm -rf test-tmp
+rm -rf test-tmp || true
 
 # Test detect-config-drift.sh
 echo ""

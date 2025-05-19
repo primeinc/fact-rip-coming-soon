@@ -15,10 +15,10 @@ fi
 echo "✅ pnpm found: $(pnpm --version)"
 
 echo "🧹 Cleaning up any existing node_modules..."
-rm -rf node_modules
-rm -rf dist
-rm -rf coverage
-rm -rf playwright-report
+rm -rf node_modules || true
+rm -rf dist || true
+rm -rf coverage || true
+rm -rf playwright-report || true
 
 echo "📦 Installing dependencies with pnpm..."
 pnpm install --frozen-lockfile

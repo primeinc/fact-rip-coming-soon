@@ -7,6 +7,7 @@ const { execSync } = require('child_process');
 class AtomicDriftValidator {
     constructor() {
         this.driftMap = new Map();
+        this.deploymentConfig = JSON.parse(fs.readFileSync('config/deployment.json', 'utf8'));
         this.requiredSurfaces = [
             'deployment.json',
             'manifest.json',
@@ -43,13 +44,12 @@ class AtomicDriftValidator {
     }
 
     async loadDeploymentConfig() {
-        const config = JSON.parse(fs.readFileSync('config/deployment.json', 'utf8'));
         return {
             surface: 'deployment.json',
-            siteId: config.netlify.siteId,
-            productionUrl: config.netlify.productionUrl,
-            siteName: config.netlify.siteName,
-            customDomain: config.domains.production
+            siteId: this.deploymentConfig.netlify.siteId,
+            productionUrl: this.deploymentConfig.netlify.productionUrl,
+            siteName: this.deploymentConfig.netlify.siteName,
+            customDomain: this.deploymentConfig.domains.production
         };
     }
 
@@ -79,7 +79,7 @@ class AtomicDriftValidator {
             return { surface: 'netlify-api', error: 'No auth token' };
         }
 
-        const siteId = JSON.parse(fs.readFileSync('config/deployment.json', 'utf8')).netlify.siteId;
+        const siteId = this.deploymentConfig.netlify.siteId;
 
         return new Promise((resolve) => {
             const options = {
@@ -133,10 +133,13 @@ class AtomicDriftValidator {
             .split('\n');
 
         const hardcodedValues = [];
+        const { siteId, siteName } = this.deploymentConfig.netlify;
+        
         scripts.forEach(script => {
             const content = fs.readFileSync(script, 'utf8');
-            if (content.includes('sparkly-bombolone-c419df') ||
-                content.includes('33e2505e-7a9d-4867-8fbf-db91ca602087')) {
+            // Check for hardcoded values using dynamic patterns from config
+            if (content.includes(siteName) ||
+                content.includes(siteId)) {
                 hardcodedValues.push(script);
             }
         });
