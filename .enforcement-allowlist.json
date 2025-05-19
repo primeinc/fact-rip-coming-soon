@@ -19,6 +19,10 @@
       "src/contexts/StorageContext.tsx",
       "src/utils/storage-adapter.ts",
       "src/hooks/useLocalStorage.ts"
+    ],
+    "secret_patterns": [
+      "scripts/scan-secret-history.sh",
+      "scripts/check-no-secrets.sh"
     ]
   }
 }

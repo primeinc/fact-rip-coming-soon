@@ -191,11 +191,14 @@ class ZeroDriftEnforcer {
             if (!fs.lstatSync(file).isDirectory()) {
                 try {
                     const content = fs.readFileSync(file, 'utf8');
-                    secretPatterns.forEach(pattern => {
-                        if (pattern.test(content)) {
-                            this.check(false, `Potential secret in ${file}`);
-                        }
-                    });
+                    const isAllowed = this.isFileAllowed(file, 'secret_patterns');
+                    if (!isAllowed) {
+                        secretPatterns.forEach(pattern => {
+                            if (pattern.test(content)) {
+                                this.check(false, `Potential secret in ${file}`);
+                            }
+                        });
+                    }
                 } catch (e) {
                     // Binary or unreadable file, skip
                 }
