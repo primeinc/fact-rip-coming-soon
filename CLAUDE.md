@@ -18,25 +18,28 @@ Single-page React app for fact.rip - a civic memory utility. The page serves as 
 ## Project Evolution
 
 1. **Initial Phase**: Basic coming soon page with animations
-2. **Refactor Phase**: Modularized architecture with custom hooks
+2. **Refactor Phase**: Modularized architecture with custom hooks  
 3. **Hardening Phase**: Added E2E tests, telemetry, error reporting
 4. **Architecture Fix**: Major refactor to fix global state leaks and race conditions
-5. **Current State**: Production-ready with proper test isolation and deterministic state management
+5. **Enforcement Phase**: Added architectural invariant checks and runtime guards
+6. **CI/CD Fix**: Fixed deployment pipeline, centralized config, strict validation
+7. **Current State**: Production-ready with enforced patterns and validated deployments
 
-## Recent Architecture Refactor
+## Recent Critical Fixes
 
-### Problems Fixed
-1. **Global Storage Adapter**: Replaced singleton with context-injected adapters to prevent test state leakage
-2. **Race Conditions**: Removed useEffect that automatically set `hasVisited` - now only set on user action
-3. **Test Isolation**: Each test now gets a fresh storage adapter instance
-4. **Window Globals**: Replaced brittle `window.__PLAYWRIGHT_TEST__` checks with proper dependency injection
+### CI/CD Pipeline Issues Resolved
+1. **Broken Smoke Tests**: Fixed missing Playwright browsers in deployment jobs
+2. **Hardcoded URLs**: Centralized all deployment config in `config/deployment.json`
+3. **Secret Handling**: No local env files allowed - only GitHub Secrets
+4. **False Success Signals**: Added separate validation job that must pass
+5. **Deployment Truth**: Deployments only valid if ALL CI checks pass
 
-### Key Changes
-1. Created `StorageContext` provider for dependency injection
-2. Added `test-utils.ts` to inject test storage adapters
-3. Updated `App.tsx` to remove automatic state mutations
-4. Fixed modal logic to show correct content based on actual state
-5. Added proper timing to state transitions
+### Architectural Enforcement
+1. **Storage Pattern**: All storage access MUST go through StorageContext
+2. **No Direct Storage**: CI fails on any direct localStorage/sessionStorage access
+3. **No Timeouts**: setTimeout/setInterval banned except for animations
+4. **Runtime Guards**: Development throws errors on architectural violations
+5. **Pre-commit Enforcement**: All patterns checked before commit
 
 ## Architecture
 
@@ -44,81 +47,151 @@ Single-page React app for fact.rip - a civic memory utility. The page serves as 
 src/
 ├── components/      # UI components (all tested)
 │   ├── CTAButton.tsx
-│   ├── ErrorBoundary.tsx  # Enhanced with error reporting
+│   ├── ErrorBoundary.tsx  # Uses emergency-storage only
 │   ├── Modal.tsx         # Accessible with focus trap
 │   ├── ProgressBar.tsx
 │   ├── Pulse.tsx         # ARIA-compliant
 │   ├── Seal.tsx
 │   └── Title.tsx
 ├── contexts/       # React contexts for DI
-│   └── StorageContext.tsx # Storage adapter injection
+│   ├── StorageContext.tsx # Storage adapter injection
+│   └── UserJourneyContext.tsx # Centralized state management
 ├── hooks/          # Custom React hooks (unit tested)
 │   ├── useLocalStorage.ts # Updated to use context
 │   ├── useTelemetry.ts
 │   └── useViewportHeight.ts
 ├── constants/      # Configuration
-│   └── animations.ts
-├── config/         # Branding and text
-│   └── branding.ts
+│   ├── animations.ts
+│   └── timings.ts    # Animation timing constants
+├── config/         # Application configuration
+│   ├── branding.ts   # All text/assets
+│   └── deployment.json # Deployment URLs and config
 ├── utils/         # Utility functions
-│   ├── storage.ts  # Storage factory function
-│   └── storage-adapter.ts # Storage adapter interfaces
+│   ├── storage.ts        # Storage factory function
+│   ├── storage-adapter.ts # Storage adapter interfaces
+│   ├── emergency-storage.ts # Only for ErrorBoundary
+│   └── runtime-guards.ts    # Dev-only enforcement
 ├── test/          # Test setup
 │   └── setup.ts
-├── App.tsx        # Main component (no more auto-mutations)
+├── App.tsx        # Main component (event-driven state)
 └── index.css      # Tailwind + mobile optimizations
 
 e2e/               # Playwright E2E tests
 ├── test-utils.ts  # Test storage injection helpers
+├── test-hooks.ts  # Playwright fixtures
 ├── accessibility.spec.ts  # WCAG compliance tests
 ├── telemetry.spec.ts     # API contract tests
-└── user-journey.spec.ts  # Full user flows (updated)
+└── user-journey.spec.ts  # Full user flows
+
+scripts/          # Build and enforcement scripts
+├── check-npm-usage.sh      # Enforce pnpm only
+├── check-no-secrets.sh     # Prevent secret leakage
+├── enforce-storage-pattern.sh  # Check storage access
+├── enforce-no-timeouts.sh      # Check timing patterns
+├── validate-lockfile.sh        # Lockfile integrity
+└── smoke-test-production.js    # Post-deploy validation
 ```
+
+## Enforcement Mechanisms
+
+### CI/CD Pipeline
+1. **Pre-flight Checks**: pnpm-only, no secrets, lockfile valid
+2. **Pattern Enforcement**: Storage access, timeout usage
+3. **Test Suite**: Unit, E2E, accessibility must all pass
+4. **Build & Deploy**: Only on main, only if tests pass
+5. **Validation**: Separate job for smoke tests
+6. **Truth**: Deployment only valid if ALL checks pass
+
+### Runtime Guards (Development)
+- Direct storage access throws errors
+- Context usage enforced
+- Architectural violations fail fast
+- Disabled during tests to prevent false positives
+
+### Pre-commit Hooks
+1. pnpm-only check
+2. No secrets check
+3. Storage pattern enforcement  
+4. Timeout pattern enforcement
+5. TypeScript compilation
+
+## Critical Design Patterns
+
+### Storage Access
+```typescript
+// ❌ NEVER DO THIS
+localStorage.setItem('key', 'value');
+
+// ✅ ALWAYS DO THIS
+const adapter = useStorageAdapter();
+adapter.setItem('key', 'value');
+```
+
+### Animation Timing
+```typescript
+// ❌ NEVER DO THIS
+setTimeout(() => setState(val), 300);
+
+// ✅ ALWAYS DO THIS (with annotation)
+// @animation-timeout: modal fade
+setTimeout(() => setState(val), TIMINGS.modalFade);
+```
+
+### Secret Management
+- NO .env files in repository
+- NO hardcoded tokens/keys
+- ONLY use GitHub Secrets
+- CI will fail on any secret files
 
 ## Testing Infrastructure
 
 ### Unit Tests (Vitest)
-- Components: Modal, etc.
-- Hooks: useLocalStorage (now with context)
-- Coverage for all critical paths
+- Components with proper context wrapping
+- Hooks with storage adapter injection
+- All tests isolated with fresh adapters
 
 ### E2E Tests (Playwright)
-- User journeys (first visit, returning) - now with proper isolation
-- Mobile viewports
-- Keyboard navigation
-- Network failure scenarios
-- LocalStorage disabled
-- Error boundary recovery
-- Accessibility (axe-core)
-- Telemetry contract validation
+- Test adapter injection for isolation
+- No global state between tests
+- Deterministic assertions
+- Multiple browser/viewport testing
 
-### Test Isolation Strategy
-- Each test gets a fresh storage adapter via `injectTestStorageAdapter`
-- No global state persists between tests
-- Proper timing for state transitions
-- Deterministic test outcomes
+### Smoke Tests
+- Run against deployed URL
+- Part of CI/CD validation
+- Must pass for valid deployment
 
-## CI/CD Pipeline
+## Deployment
 
-### GitHub Actions Workflow
-1. Type checking + linting
-2. Unit tests
-3. E2E tests (multiple browsers)
-4. Build artifacts
-5. Auto-deploy to Netlify (main branch)
+### Configuration
+All deployment config in `config/deployment.json`:
+- Site IDs
+- Production URLs  
+- Domain mappings
 
-### Pre-commit Hooks (Husky)
-- TypeScript compilation
-- ESLint checks
+### Process
+1. Push to main branch
+2. CI runs all enforcement checks
+3. Tests must pass (unit, E2E, accessibility)
+4. Deploy to Netlify
+5. Validation job runs smoke tests
+6. Only if ALL pass is deployment valid
+
+### URLs
+- Production: https://sparkly-bombolone-c419df.netlify.app/
+- All URLs centralized in config/deployment.json
 
 ## Environment Variables
 
 ```bash
+# GitHub Secrets only - no local env files
+NETLIFY_AUTH_TOKEN   # Netlify deployment
+NETLIFY_SITE_ID      # Netlify site identifier
+
+# Application variables
 VITE_TELEMETRY_ENDPOINT      # Analytics endpoint
 VITE_ERROR_REPORT_ENDPOINT   # Error reporting
 VITE_SENTRY_DSN             # Optional Sentry
-VITE_ENABLE_TELEMETRY       # Feature flag
-VITE_ENABLE_ERROR_REPORTING # Feature flag
 ```
 
 ## Package Management (Strictly pnpm)
@@ -127,7 +200,7 @@ VITE_ENABLE_ERROR_REPORTING # Feature flag
 - This repository requires pnpm v8+  
 - npm and npx are **not allowed**
 - CI/CD enforces pnpm-only usage
-- All developers must use pnpm exclusively
+- Pre-commit hooks check for violations
 
 ### Common Commands
 ```bash
@@ -140,205 +213,47 @@ pnpm add -D <dev-package>
 
 # Run any CLI tool
 pnpm exec <tool> <args>      # Instead of npx
-pnpm exec tailwindcss init   # Example
 pnpm exec playwright install # Example
 
 # Run scripts
 pnpm run <script>           # Instead of npm run
 pnpm dev                    # Shorthand works
-
-# Clean install
-rm -rf node_modules
-pnpm install
-```
-
-### CI/CD Enforcement  
-The GitHub Actions workflow:
-1. Uses pnpm/action-setup
-2. Caches pnpm dependencies
-3. Runs all commands with pnpm
-4. Fails on any npm/npx usage
-
-## Key Features Implemented
-
-1. **State Persistence**: localStorage with context-based adapters
-2. **Telemetry**: Optional backend integration  
-3. **Error Boundaries**: With user reporting
-4. **Accessibility**: WCAG AA compliant
-5. **Mobile Optimization**: Safe areas, dynamic viewport
-6. **Animation System**: Symbolic timing in constants
-7. **Branding Config**: All text/assets centralized
-8. **Test Isolation**: Fresh adapter per test context
-
-## Critical Design Decisions
-
-### Storage Adapter Pattern
-- Interfaces allow swapping localStorage/memory storage
-- Context injection prevents global state
-- Test isolation via fresh instances
-
-### State Management
-- No automatic mutations in effects
-- User actions drive all state changes
-- Modal state determined by actual data, not timing
-
-### Why Tailwind v3 (not v4)
-- v4 has PostCSS plugin incompatibility
-- v3 is production stable
-
-### Why Custom Hooks
-- Abstraction for storage failures
-- Testable telemetry logic
-- Reusable viewport handling
-
-### Why Playwright
-- Real browser testing
-- Mobile viewport validation
-- Network condition simulation
-
-## Known Edge Cases Handled
-
-1. **localStorage disabled**: Graceful degradation to memory storage
-2. **Network failures**: Telemetry fallback to console
-3. **CORS errors**: Modal still functions
-4. **Reduced motion**: Instant animations
-5. **Mobile keyboards**: Viewport adjustment
-6. **Focus management**: Trap in modal
-7. **Test state leaks**: Prevented via context isolation
-
-## Performance Optimizations
-
-- Hardware-accelerated animations only
-- Lazy modal mounting
-- Minimal re-renders
-- <100KB JS bundle (gzipped)
-
-## Accessibility Features
-
-- ARIA labels and roles
-- Keyboard navigation
-- Focus trapping in modal
-- Escape key handling
-- Screen reader tested
-- 4.5:1 contrast ratios
-
-## Deployment
-
-### Automated via CI/CD
-- Push to main → Deploy to Netlify
-- PR → Preview deployment
-- All tests must pass
-
-### Manual Deployment
-```bash
-pnpm run build
-# Deploy dist/ folder to any static host
-```
-
-## Future Considerations
-
-### State Management
-- Currently using hooks + props + context
-- Consider Redux/Zustand if complexity grows
-
-### Internationalization
-- Text in branding.ts ready for i18n
-- No i18n library yet implemented
-
-### Analytics
-- Telemetry endpoint ready
-- No specific analytics provider
-
-## Development Workflow
-
-```bash
-# START: Install dependencies (never use npm install)
-pnpm install
-
-# Start dev server
-pnpm run dev
-
-# Run all tests
-pnpm run test:all
-
-# E2E tests with UI  
-pnpm run test:e2e:ui
-
-# Type check and lint
-pnpm run typecheck
-
-# Install Playwright (never use npx playwright)
-pnpm exec playwright install --with-deps
-
-# Any CLI tool must use pnpm exec, never npx
-pnpm exec <cli-tool> <args>
-```
-
-## Testing Best Practices
-
-### E2E Test Pattern
-```typescript
-// Always inject fresh storage adapter
-await injectTestStorageAdapter(page, {
-  'fact.rip.visited': 'true', // Optional initial state
-});
-
-// Check state transitions, not just UI
-const storageState = await page.evaluate(() => {
-  const adapter = (window as any).__TEST_STORAGE_ADAPTER__;
-  return adapter.getItem('fact.rip.visited');
-});
 ```
 
 ## Security Considerations
 
-- No secrets in code
+- No secrets in code (enforced by CI)
+- Emergency storage only for ErrorBoundary
+- All other storage through context
 - Environment variables for endpoints
 - CORS-aware telemetry
-- Error messages sanitized
 
-## Monitoring
+## Monitoring and Validation
 
-- Console logging for development
-- Telemetry for production metrics
-- Error boundary for crash reporting
-- Performance timing via animations
+- Runtime guards in development
+- Pre-commit enforcement
+- CI/CD pattern checking
+- Post-deploy smoke tests
+- Separate validation job
 
-## Symbolic Design Language
+## Contributing Guidelines
 
-1. **"The Loop Closes"**: First visit
-2. **"The Loop Persists"**: Return visit
-3. **Red pulse**: Active monitoring
-4. **Delayed seal**: Trust verification
-5. **Animation timing**: Epistemic weight
-
-## Bundle Size Targets
-
-- JS: <100KB gzipped ✓
-- CSS: <10KB gzipped ✓
-- Initial paint: <1s ✓
-- TTI: <2s ✓
-
-## Browser Support
-
-- Chrome/Edge: Full
-- Firefox: Full
-- Safari: Full
-- Mobile: iOS 13+, Android 8+
+See CONTRIBUTING.md for detailed rules:
+1. All storage through context
+2. No setTimeout/setInterval without annotation
+3. No local env files
+4. All patterns enforced by CI
+5. Deployment only valid if pipeline passes
 
 ## Production Readiness Checklist
 
-✅ Error boundaries with reporting
-✅ Telemetry with fallbacks
-✅ Accessibility tested
-✅ Mobile optimized
-✅ E2E test coverage
-✅ CI/CD pipeline
-✅ Deployment automation
-✅ Performance budgets
-✅ Security headers configured
-✅ Monitoring in place
-✅ Test isolation architecture
-✅ Deterministic state management
+✅ Architectural patterns enforced at multiple levels
+✅ CI/CD pipeline with strict validation
+✅ No secret leakage possible
+✅ Centralized deployment configuration
+✅ Smoke tests validate every deployment
+✅ Runtime guards catch violations in dev
+✅ Pre-commit hooks prevent bad patterns
+✅ All tests must pass for valid deployment
 
-This is now production infrastructure with proper architecture for testability and maintainability.
+This is now production infrastructure with enforced patterns, validated deployments, and no possibility of architectural drift.
