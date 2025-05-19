@@ -80,8 +80,11 @@ check_file() {
 echo "🔍 Checking for npm/npx usage with annotation support..."
 echo ""
 
+[ "$VERBOSE" = "true" ] && echo "DEBUG: Entering file check section"
+
 # If a specific file is provided, only check that file
 if [ -n "$TARGET_FILE" ]; then
+    [ "$VERBOSE" = "true" ] && echo "DEBUG: TARGET_FILE is set to: $TARGET_FILE"
     if [ -f "$TARGET_FILE" ]; then
         [ "$VERBOSE" = "true" ] && echo "Checking single file: $TARGET_FILE"
         [ "$VERBOSE" = "true" ] && echo "DEBUG: File exists, checking if readable: $(stat -f '%A' "$TARGET_FILE" 2>/dev/null || stat -c '%a' "$TARGET_FILE" 2>/dev/null || echo 'stat failed')"
@@ -93,6 +96,7 @@ if [ -n "$TARGET_FILE" ]; then
         exit 1
     fi
 else
+    [ "$VERBOSE" = "true" ] && echo "DEBUG: TARGET_FILE is empty, checking all files"
     # Check all files (excluding node_modules and hidden directories)
     while IFS= read -r file; do
         # Skip binary files
@@ -112,6 +116,7 @@ else
         -not -path "./test/test-annotation-system.md" \
         -not -path "./test/temp-*.md" \
         -not -path "./scripts/test-annotation-enforcement.sh")
+    [ "$VERBOSE" = "true" ] && echo "DEBUG: Done scanning files"
 fi
 
 # Count violations and exceptions from temp file
