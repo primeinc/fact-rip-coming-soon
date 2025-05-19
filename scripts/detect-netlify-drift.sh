@@ -103,10 +103,14 @@ echo ""
 echo "🔐 Checking environment variables..."
 
 ENV_VARS_RESPONSE=$(curl -s -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" \
-    "https://api.netlify.com/api/v1/accounts/site/$LOCAL_SITE_ID/env")
+    "https://api.netlify.com/api/v1/sites/$LOCAL_SITE_ID/env" || echo "{}")
 
-NETLIFY_ENV_COUNT=$(echo $ENV_VARS_RESPONSE | jq '. | length')
-echo "  Found $NETLIFY_ENV_COUNT environment variables configured"
+if echo "$ENV_VARS_RESPONSE" | jq . >/dev/null 2>&1; then
+    NETLIFY_ENV_COUNT=$(echo $ENV_VARS_RESPONSE | jq '. | length')
+    echo "  Found $NETLIFY_ENV_COUNT environment variables configured"
+else
+    echo "  ⚠️  Unable to fetch environment variables (may require account-level access)"
+fi
 
 # Summary
 echo ""

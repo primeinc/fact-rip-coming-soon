@@ -8,7 +8,7 @@ echo "🔍 Enforcing shell script standards..."
 VIOLATIONS=0
 
 # Find all shell scripts
-SHELL_SCRIPTS=$(find . -name "*.sh" -not -path "./node_modules/*" -not -path "./.git/*")
+SHELL_SCRIPTS=$(find . -name "*.sh" -not -path "./node_modules/*" -not -path "./.git/*" | tr '\n' ' ')
 
 for script in $SHELL_SCRIPTS; do
     echo "Checking: $script"
