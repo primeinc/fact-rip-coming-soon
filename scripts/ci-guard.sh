@@ -28,10 +28,12 @@ if [ -z "${GITHUB_ACTIONS:-}" ] && [ -z "${GITLAB_CI:-}" ] && [ -z "${CIRCLECI:-
     echo "Supported CI systems: GitHub Actions, GitLab CI, CircleCI"
 fi
 
-# Verify git hooks are enabled
-if [ -d ".git" ] && [ ! -f ".git/hooks/pre-commit" ]; then
-    echo "❌ Git hooks not installed - security bypass possible"
-    exit 1
+# Verify git hooks are enabled (check both old and new locations)
+if [ -d ".git" ]; then
+    if [ ! -f ".git/hooks/pre-commit" ] && [ ! -f ".githooks/pre-commit" ]; then
+        echo "❌ Git hooks not installed - security bypass possible"
+        exit 1
+    fi
 fi
 
 # Log execution for audit
