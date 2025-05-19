@@ -1,4 +1,6 @@
 #!/usr/bin/env sh
 
 pnpm run check:pnpm
+pnpm run check:storage
+pnpm run check:timeouts
 pnpm run typecheck

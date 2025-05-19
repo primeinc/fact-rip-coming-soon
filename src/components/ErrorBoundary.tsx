@@ -1,6 +1,7 @@
 import { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
 import { BRANDING } from '../config/branding';
+import { emergencyStorage } from '../utils/emergency-storage';
 
 interface Props {
   children: ReactNode;
@@ -8,27 +9,36 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error?: Error;
-  errorId?: string;
+  error: Error | null;
+  errorId: string | null;
   reportSent: boolean;
 }
 
-export default class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
+class ErrorBoundary extends Component<Props, State> {
+  state: State = {
     hasError: false,
+    error: null,
+    errorId: null,
     reportSent: false
   };
-
-  public static getDerivedStateFromError(error: Error): State {
-    const errorId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    return { hasError: true, error, errorId, reportSent: false };
+  
+  static getDerivedStateFromError(error: Error): State {
+    const errorId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    return {
+      hasError: true,
+      error,
+      errorId,
+      reportSent: false
+    };
   }
-
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const { errorId } = this.state;
     
+    // Build comprehensive error report
     const errorReport = {
-      id: errorId,
+      errorId,
       message: error.message,
       stack: error.stack,
       componentStack: errorInfo.componentStack,
@@ -55,12 +65,12 @@ export default class ErrorBoundary extends Component<Props, State> {
       }).catch(() => {});
     }
     
-    // Store error locally for recovery
-    try {
-      localStorage.setItem('fact.rip.lastError', JSON.stringify(errorReport));
-    } catch {
-      // Storage might be full or disabled
-    }
+    // Store error using emergency storage (only allowed place)
+    emergencyStorage.setError({
+      message: error.message,
+      stack: error.stack || '',
+      id: errorId || ''
+    });
   }
   
   private handleSendReport = async () => {
@@ -93,73 +103,65 @@ export default class ErrorBoundary extends Component<Props, State> {
   };
   
   private handleRecovery = () => {
-    // Clear error state from storage
-    try {
-      localStorage.removeItem('fact.rip.lastError');
-    } catch {
-      // Ignore storage errors
-    }
+    // Clear error state from emergency storage
+    emergencyStorage.clearError();
     
     // Reload the page
     window.location.reload();
   };
-
-  public render() {
-    if (this.state.hasError) {
-      const { error, errorId, reportSent } = this.state;
-      
+  
+  render() {
+    const { hasError, error, reportSent } = this.state;
+    const { children } = this.props;
+    
+    if (hasError && error) {
       return (
-        <main className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-6">
-          <h1 className="text-2xl font-bold mb-4 text-red-500">
-            {BRANDING.copy.error.title}
-          </h1>
-          <p className="text-gray-300 mb-6 max-w-md text-center">
-            {BRANDING.copy.error.body}
-          </p>
-          
-          {errorId && (
-            <p className="text-xs text-gray-500 mb-4 font-mono">
-              Error ID: {errorId}
-            </p>
-          )}
-          
-          <div className="flex gap-4">
-            <button
-              onClick={this.handleRecovery}
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 rounded-full transition-colors"
-            >
-              {BRANDING.copy.error.resume}
-            </button>
+        <div className="min-h-screen bg-black text-red-500 flex items-center justify-center p-8">
+          <div className="max-w-lg w-full text-center space-y-6">
+            <h1 className="text-3xl font-mono mb-4">
+              {BRANDING.copy.error.title}
+            </h1>
             
-            {import.meta.env.VITE_ERROR_REPORT_ENDPOINT && (
-              <button
-                onClick={this.handleSendReport}
-                disabled={reportSent}
-                className={`px-6 py-3 border border-red-600 rounded-full transition-colors ${
-                  reportSent 
-                    ? 'text-gray-500 border-gray-500 cursor-not-allowed' 
-                    : 'text-red-500 hover:bg-red-600/10'
-                }`}
-              >
-                {reportSent ? BRANDING.copy.error.reported : BRANDING.copy.error.report}
-              </button>
-            )}
+            <div className="space-y-4 text-red-400">
+              <p className="font-mono">{BRANDING.copy.error.body}</p>
+              
+              <div className="bg-red-950/30 border border-red-800 rounded p-4 text-left">
+                <code className="text-xs block overflow-auto">
+                  {error.message}
+                </code>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3 justify-center mt-6">
+                <button
+                  onClick={this.handleRecovery}
+                  className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded transition-colors font-mono text-sm"
+                >
+                  {BRANDING.copy.error.resume}
+                </button>
+                
+                {import.meta.env.VITE_ERROR_REPORT_ENDPOINT && !reportSent && (
+                  <button
+                    onClick={this.handleSendReport}
+                    className="px-6 py-3 bg-red-900 hover:bg-red-800 text-red-100 rounded transition-colors font-mono text-sm"
+                  >
+                    {BRANDING.copy.error.report}
+                  </button>
+                )}
+                
+                {reportSent && (
+                  <p className="text-red-400 font-mono text-sm">
+                    {BRANDING.copy.error.reported}
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
-          
-          {import.meta.env.DEV && error && (
-            <details className="mt-8 max-w-2xl">
-              <summary className="cursor-pointer text-gray-400">
-                Developer Details
-              </summary>
-              <pre className="mt-4 p-4 bg-gray-900 rounded text-xs overflow-auto">
-                {error.stack}
-              </pre>
-            </details>
-          )}
-        </main>
+        </div>
       );
     }
-
-    return this.props.children;
+    
+    return children;
   }
 }
+
+export default ErrorBoundary;

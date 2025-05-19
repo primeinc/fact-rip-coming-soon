@@ -37,6 +37,7 @@ export default function App() {
   const handleModalClose = useCallback(() => {
     dispatch({ type: 'CLOSE_MODAL' });
     // After animation completes, hide the modal
+    // @animation-timeout: modal fade out
     setTimeout(() => {
       dispatch({ type: 'MODAL_HIDDEN' });
     }, 300);

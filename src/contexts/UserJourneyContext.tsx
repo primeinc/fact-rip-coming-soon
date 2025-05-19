@@ -79,12 +79,14 @@ export function UserJourneyProvider({ children, onJourneyEvent }: UserJourneyPro
   const joinWatchtower = useCallback((timestamp: string) => {
     dispatch({ type: 'START_JOIN' });
     
-    // Show modal first
+    // Show modal first with animation delay
+    // @animation-timeout: modal appearance transition
     setTimeout(() => {
       dispatch({ type: 'SHOW_MODAL' });
       dispatch({ type: 'MODAL_READY' });
       
-      // Then confirm join after a delay
+      // Then confirm join after a brief delay
+      // @animation-timeout: state sync delay
       setTimeout(() => {
         dispatch({ type: 'CONFIRM_JOIN', timestamp });
         onJourneyEvent?.('join:confirmed', { timestamp });

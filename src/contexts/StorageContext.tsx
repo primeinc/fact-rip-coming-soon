@@ -18,7 +18,15 @@ const StorageContext = createContext<StorageContextType | undefined>(undefined);
 export function useStorageAdapter() {
   const context = useContext(StorageContext);
   if (!context) {
-    throw new Error('useStorageAdapter must be used within StorageProvider');
+    const error = new Error(
+      '\n\n🚨 useStorageAdapter called outside StorageProvider!\n\n' +
+      'This hook must be used within a <StorageProvider> component tree.\n' +
+      'Check your component hierarchy and ensure all storage-using components ' +
+      'are wrapped in the provider.\n\n' +
+      'Stack trace:'
+    );
+    console.error(error);
+    throw error;
   }
   return context.adapter;
 }
