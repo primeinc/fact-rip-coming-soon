@@ -116,9 +116,12 @@ jobs:
     
     - name: Install dependencies for smoke test
       run: pnpm install --frozen-lockfile
+    
+    - name: Install Playwright browsers
+      run: pnpm exec playwright install chromium
       
     - name: Smoke test deployed URL
       run: |
-        SMOKE_TEST_URL=${{ steps.deploy.outputs.deploy-url }} pnpm exec node scripts/smoke-test-production.js
+        SMOKE_TEST_URL=https://sparkly-bombolone-c419df.netlify.app pnpm exec node scripts/smoke-test-production.js
       env:
-        SMOKE_TEST_URL: ${{ steps.deploy.outputs.deploy-url }}
+        SMOKE_TEST_URL: https://sparkly-bombolone-c419df.netlify.app
