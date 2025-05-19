@@ -24,15 +24,11 @@ check_file() {
     local in_code_block=false
     local annotation_active=false
     local line_number=0
-    local file_violations=0
     
     [ "$VERBOSE" = "true" ] && echo "DEBUG: Starting to read file: $file"
-    [ "$VERBOSE" = "true" ] && echo "DEBUG: File content preview: $(head -5 "$file" | cat -n)"
     
-    # Read file using a different approach that works in CI
     while IFS= read -r line; do
         line_number=$((line_number + 1))
-        [ "$VERBOSE" = "true" ] && [ $line_number -le 5 ] && echo "DEBUG: Processing line $line_number: $line"
         
         # Detect code block boundaries
         if echo "$line" | grep -qE '^```'; then
@@ -73,32 +69,27 @@ check_file() {
                 fi
             fi
         fi
-    done < "$file"
+    done < "$file" || true
+    
     [ "$VERBOSE" = "true" ] && echo "DEBUG: Finished reading file: $file (line_number=$line_number)"
 }
 
 echo "🔍 Checking for npm/npx usage with annotation support..."
 echo ""
 
-[ "$VERBOSE" = "true" ] && echo "DEBUG: Entering file check section"
-
 # If a specific file is provided, only check that file
 if [ -n "$TARGET_FILE" ]; then
-    [ "$VERBOSE" = "true" ] && echo "DEBUG: TARGET_FILE is set to: $TARGET_FILE"
     if [ -f "$TARGET_FILE" ]; then
         [ "$VERBOSE" = "true" ] && echo "Checking single file: $TARGET_FILE"
-        [ "$VERBOSE" = "true" ] && echo "DEBUG: File exists, checking if readable: $(stat -f '%A' "$TARGET_FILE" 2>/dev/null || stat -c '%a' "$TARGET_FILE" 2>/dev/null || echo 'stat failed')"
-        [ "$VERBOSE" = "true" ] && echo "DEBUG: File size: $(wc -c < "$TARGET_FILE" || echo 'wc failed')"
-        [ "$VERBOSE" = "true" ] && echo "DEBUG: First line: $(head -1 "$TARGET_FILE" || echo 'head failed')"
         check_file "$TARGET_FILE"
     else
         echo "Error: File not found: $TARGET_FILE"
         exit 1
     fi
 else
-    [ "$VERBOSE" = "true" ] && echo "DEBUG: TARGET_FILE is empty, checking all files"
     # Check all files (excluding node_modules and hidden directories)
-    # Using a temporary file to avoid subshell issues
+    [ "$VERBOSE" = "true" ] && echo "DEBUG: Starting directory scan"
+    
     FIND_TEMP=$(mktemp)
     find . -type f \( -name "*.md" -o -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" -o -name "*.sh" \) \
         -not -path "*/node_modules/*" \
@@ -113,32 +104,30 @@ else
     while IFS= read -r file; do
         # Skip binary files
         if file "$file" | grep -q "binary"; then
+            [ "$VERBOSE" = "true" ] && echo "DEBUG: Skipping binary file: $file"
             continue
         fi
         
         # Check the file
         [ "$VERBOSE" = "true" ] && echo "Checking: $file"
         check_file "$file"
-    done < "$FIND_TEMP"
+    done < "$FIND_TEMP" || true
+    
     rm -f "$FIND_TEMP"
     [ "$VERBOSE" = "true" ] && echo "DEBUG: Done scanning files"
 fi
 
-[ "$VERBOSE" = "true" ] && echo "DEBUG: About to count violations"
-
 # Count violations and exceptions from temp file
 if [ -f "$TEMP_FILE" ]; then
-    [ "$VERBOSE" = "true" ] && echo "DEBUG: TEMP_FILE exists at $TEMP_FILE"
     FOUND_VIOLATIONS=$(grep -c "^VIOLATION$" "$TEMP_FILE" || true)
-    [ "$VERBOSE" = "true" ] && echo "DEBUG: FOUND_VIOLATIONS=$FOUND_VIOLATIONS"
+    
     while IFS= read -r line; do
         if [[ "$line" == EXCEPTION:* ]]; then
             DOCUMENTED_EXCEPTIONS+=("${line#EXCEPTION:}")
         fi
     done < "$TEMP_FILE"
+    
     rm -f "$TEMP_FILE"
-else
-    [ "$VERBOSE" = "true" ] && echo "DEBUG: TEMP_FILE does not exist"
 fi
 
 # Report results
@@ -173,6 +162,3 @@ else
     echo "✅ PASSED: All npm/npx usage is either converted or properly annotated"
     exit 0
 fi
-
-# Ensure clean exit
-true
