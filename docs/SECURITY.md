@@ -102,9 +102,11 @@ font-src 'self';
    - Code quality checks
 
 2. **CI/CD Pipeline**
-   - Full secret history scan
+   - Robust secret history scan (with `scan-secret-history.sh`)
    - Vulnerability scanning
    - Configuration validation
+
+For detailed information on security scripts, see [Security Scripts Documentation](./SECURITY-SCRIPTS.md).
 
 3. **Production**
    - Health checks every 15 minutes

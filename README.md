@@ -31,6 +31,7 @@ Visit the [Developer Quickstart Guide](docs/QUICKSTART.md) for detailed setup in
 - [Developer Quickstart](docs/QUICKSTART.md) - Get up and running quickly
 - [Testing Strategy](docs/TESTING.md) - Comprehensive testing approach
 - [Security Documentation](docs/SECURITY.md) - Security measures and compliance
+- [Security Scripts](docs/SECURITY-SCRIPTS.md) - Detailed documentation on security scanning scripts
 - [Architecture Decisions](docs/adr/) - Key architectural choices
 - [Scripts Documentation](scripts/README.md) - CI/CD enforcement scripts
 - [Contributing Guide](CONTRIBUTING.md) - How to contribute

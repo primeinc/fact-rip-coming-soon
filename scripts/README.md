@@ -57,7 +57,7 @@ ALLOW_LOCAL_TEST=true ./scripts/check-deployment.sh
 
 ### Security & Quality
 - `check-no-secrets.sh` - Scans for exposed secrets
-- `scan-secret-history.sh` - Checks git history for secrets
+- `scan-secret-history.sh` - Robustly checks git history for secrets with error handling and CI optimizations
 - `validate-playwright-projects.sh` - Validates test configurations
 
 ### Testing & Validation
