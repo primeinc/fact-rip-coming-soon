@@ -18,7 +18,7 @@ echo "Created temp file: $TEMP_FILE"
 FOUND_VIOLATIONS=$(grep -c "^VIOLATION$" "$TEMP_FILE" || true)
 echo "Found violations: $FOUND_VIOLATIONS"
 
-rm -f "$TEMP_FILE"
+rm -f "$TEMP_FILE" || true
 
 if [ $FOUND_VIOLATIONS -gt 0 ]; then
     echo "FAILED: Found violations"
