@@ -98,6 +98,18 @@ if [ -n "$TARGET_FILE" ]; then
 else
     [ "$VERBOSE" = "true" ] && echo "DEBUG: TARGET_FILE is empty, checking all files"
     # Check all files (excluding node_modules and hidden directories)
+    # Using a temporary file to avoid subshell issues
+    FIND_TEMP=$(mktemp)
+    find . -type f \( -name "*.md" -o -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" -o -name "*.sh" \) \
+        -not -path "*/node_modules/*" \
+        -not -path "*/.*" \
+        -not -path "./.git/*" \
+        -not -path "./test-results/*" \
+        -not -path "./playwright-report/*" \
+        -not -path "./test/test-annotation-system.md" \
+        -not -path "./test/temp-*.md" \
+        -not -path "./scripts/test-annotation-enforcement.sh" > "$FIND_TEMP"
+    
     while IFS= read -r file; do
         # Skip binary files
         if file "$file" | grep -q "binary"; then
@@ -107,27 +119,26 @@ else
         # Check the file
         [ "$VERBOSE" = "true" ] && echo "Checking: $file"
         check_file "$file"
-    done < <(find . -type f \( -name "*.md" -o -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" -o -name "*.sh" \) \
-        -not -path "*/node_modules/*" \
-        -not -path "*/.*" \
-        -not -path "./.git/*" \
-        -not -path "./test-results/*" \
-        -not -path "./playwright-report/*" \
-        -not -path "./test/test-annotation-system.md" \
-        -not -path "./test/temp-*.md" \
-        -not -path "./scripts/test-annotation-enforcement.sh")
+    done < "$FIND_TEMP"
+    rm -f "$FIND_TEMP"
     [ "$VERBOSE" = "true" ] && echo "DEBUG: Done scanning files"
 fi
 
+[ "$VERBOSE" = "true" ] && echo "DEBUG: About to count violations"
+
 # Count violations and exceptions from temp file
 if [ -f "$TEMP_FILE" ]; then
+    [ "$VERBOSE" = "true" ] && echo "DEBUG: TEMP_FILE exists at $TEMP_FILE"
     FOUND_VIOLATIONS=$(grep -c "^VIOLATION$" "$TEMP_FILE" || true)
+    [ "$VERBOSE" = "true" ] && echo "DEBUG: FOUND_VIOLATIONS=$FOUND_VIOLATIONS"
     while IFS= read -r line; do
         if [[ "$line" == EXCEPTION:* ]]; then
             DOCUMENTED_EXCEPTIONS+=("${line#EXCEPTION:}")
         fi
     done < "$TEMP_FILE"
     rm -f "$TEMP_FILE"
+else
+    [ "$VERBOSE" = "true" ] && echo "DEBUG: TEMP_FILE does not exist"
 fi
 
 # Report results
@@ -160,4 +171,5 @@ if [ $FOUND_VIOLATIONS -gt 0 ]; then
     exit 1
 else
     echo "✅ PASSED: All npm/npx usage is either converted or properly annotated"
+    exit 0
 fi
