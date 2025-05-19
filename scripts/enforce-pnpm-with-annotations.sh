@@ -173,3 +173,6 @@ else
     echo "✅ PASSED: All npm/npx usage is either converted or properly annotated"
     exit 0
 fi
+
+# Ensure clean exit
+true
