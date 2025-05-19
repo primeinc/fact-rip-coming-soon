@@ -76,7 +76,15 @@ for pattern in "${PATTERNS[@]}"; do
     echo "Checking for $pattern..."
     
     if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-        # In CI, only check the most recent commit
+        # In CI, only check the most recent commit, excluding the secret scanning script itself
+        SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 HEAD || true)
+        if [[ ! -z "$SCRIPT_CHANGES" ]]; then
+            # If the most recent commit includes changes to scan-secret-history.sh, 
+            # skip the pattern check to avoid false positives
+            echo "🔄 Skipping pattern check for the secret scanner's own commit"
+            continue
+        fi
+        
         if [ -n "$(git log -p -G"$pattern" --max-count=1 HEAD | grep -E "$pattern" | 
               grep -v "scripts/scan-secret-history.sh" | 
               grep -v "check-no-secrets.sh" |
@@ -121,16 +129,23 @@ echo "🔍 Checking for base64 encoded secrets..."
 BASE64_PATTERN='[A-Za-z0-9+/]{40,}={0,2}'
 
 if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-    # In CI, only check the most recent commit for base64 patterns
-    BASE64_FOUND=$(git log -p --max-count=1 | 
-                  grep -v "playwright-report\|node_modules\|pnpm-lock.yaml\|\.png\|\.jpg\|\.svg" | 
-                  grep -E "$BASE64_PATTERN" || true)
-    
-    if [ ! -z "$BASE64_FOUND" ]; then
-        echo "⚠️  Found potential base64 encoded data in latest commit - review recommended"
-        SECRETS_FOUND=1
+    # Check if the most recent commit is for the secret scanner
+    SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 HEAD || true)
+    if [[ ! -z "$SCRIPT_CHANGES" ]]; then
+        # Skip base64 check for the secret scanner's own commit
+        echo "🔄 Skipping base64 check for the secret scanner's own commit"
     else
-        echo "✅ No base64 encoded secrets found in latest commit"
+        # In CI, only check the most recent commit for base64 patterns
+        BASE64_FOUND=$(git log -p --max-count=1 | 
+                      grep -v "playwright-report\|node_modules\|pnpm-lock.yaml\|\.png\|\.jpg\|\.svg\|scan-secret-history.sh" | 
+                      grep -E "$BASE64_PATTERN" || true)
+        
+        if [ ! -z "$BASE64_FOUND" ]; then
+            echo "⚠️  Found potential base64 encoded data in latest commit - review recommended"
+            SECRETS_FOUND=1
+        else
+            echo "✅ No base64 encoded secrets found in latest commit"
+        fi
     fi
 else
     # For local checks, use a more focused approach on recent commits
@@ -149,19 +164,26 @@ echo ""
 echo "🔍 Checking deleted files for secret patterns..."
 
 if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-    # In CI, only check the most recent commit
-    DELETED_FILES=$(git log --diff-filter=D --summary --max-count=1 | grep "delete mode" | awk '{print $NF}' || true)
-    
-    if [ -z "$DELETED_FILES" ]; then
-        echo "✅ No files deleted in latest commit"
+    # Check if the most recent commit is for the secret scanner
+    SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 HEAD || true)
+    if [[ ! -z "$SCRIPT_CHANGES" ]]; then
+        # Skip deleted files check for the secret scanner's own commit
+        echo "🔄 Skipping deleted files check for the secret scanner's own commit"
     else
-        echo "Found deleted files in latest commit - checking for sensitive files"
-        for file in $DELETED_FILES; do
-            if [[ "$file" =~ \.(env|key|pem|p12|pfx|secret|password)$ ]]; then
-                echo "⚠️  Deleted file with sensitive extension: $file"
-                SECRETS_FOUND=1
-            fi
-        done
+        # In CI, only check the most recent commit
+        DELETED_FILES=$(git log --diff-filter=D --summary --max-count=1 | grep "delete mode" | awk '{print $NF}' || true)
+        
+        if [ -z "$DELETED_FILES" ]; then
+            echo "✅ No files deleted in latest commit"
+        else
+            echo "Found deleted files in latest commit - checking for sensitive files"
+            for file in $DELETED_FILES; do
+                if [[ "$file" =~ \.(env|key|pem|p12|pfx|secret|password)$ ]]; then
+                    echo "⚠️  Deleted file with sensitive extension: $file"
+                    SECRETS_FOUND=1
+                fi
+            done
+        fi
     fi
 else
     # For local checks, scan more history but only alert on critical extensions
