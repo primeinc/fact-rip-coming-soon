@@ -17,7 +17,10 @@ export function Modal({ isOpen, onClose, hasJoined, onReset }: ModalProps) {
     if (isOpen) {
       previousActiveElement.current = document.activeElement;
       document.body.style.overflow = 'hidden';
-      modalRef.current?.focus();
+      // Focus delay to ensure modal is mounted
+      setTimeout(() => {
+        modalRef.current?.focus();
+      }, 50);
     } else {
       document.body.style.overflow = '';
       (previousActiveElement.current as HTMLElement)?.focus();

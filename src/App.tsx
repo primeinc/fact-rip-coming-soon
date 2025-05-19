@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Title } from "./components/Title";
 import { ProgressBar } from "./components/ProgressBar";
 import { Pulse } from "./components/Pulse";
@@ -19,9 +19,11 @@ export default function App() {
   useViewportHeight();
 
   // Set visited flag on first render
-  if (!hasVisited) {
-    setHasVisited(true);
-  }
+  useEffect(() => {
+    if (!hasVisited) {
+      setHasVisited(true);
+    }
+  }, [hasVisited, setHasVisited]);
 
   const handleJoinWatchtower = useCallback(async () => {
     setIsLoading(true);

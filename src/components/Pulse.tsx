@@ -13,6 +13,7 @@ export function Pulse() {
         className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 
                    bg-red-500 rounded-full 
                    shadow-lg shadow-red-500/25"
+        role="status"
         aria-label="Actor monitoring in progress"
       />
     </div>

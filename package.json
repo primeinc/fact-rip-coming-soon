@@ -11,10 +11,11 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "typecheck": "tsc -b && eslint .",
-    "test:viewport": "node test-mobile.js",
-    "test:smoke": "node smoke-test.js",
-    "ci": "pnpm run typecheck && pnpm run test:run && pnpm run build",
+    "test:all": "pnpm run typecheck && pnpm run test:run && pnpm run test:e2e",
+    "ci": "pnpm run test:all && pnpm run build",
     "prepare": "husky"
   },
   "dependencies": {
@@ -23,7 +24,9 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
     "@eslint/js": "^9.25.0",
+    "@playwright/test": "^1.52.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
