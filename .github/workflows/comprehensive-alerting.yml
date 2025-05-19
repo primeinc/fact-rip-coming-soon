@@ -5,6 +5,8 @@ on:
     workflows: ["CI/CD", "Chaos Engineering"]
     types:
       - completed
+  schedule:
+    - cron: '*/15 * * * *'  # Every 15 minutes
   workflow_dispatch:
 
 jobs:
@@ -148,8 +150,7 @@ jobs:
 
   alert-on-drift:
     runs-on: ubuntu-latest
-    schedule:
-      - cron: '*/15 * * * *'  # Every 15 minutes
+    if: github.event_name == 'schedule'
 
     steps:
     - uses: actions/checkout@v4
@@ -209,9 +210,7 @@ jobs:
 
   alert-on-secret-exposure:
     runs-on: ubuntu-latest
-    on:
-      pull_request:
-        types: [opened, synchronize]
+    if: github.event_name == 'pull_request'
 
     steps:
     - uses: actions/checkout@v4

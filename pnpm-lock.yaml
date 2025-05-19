@@ -21,6 +21,9 @@ importers:
         specifier: ^5.19.3
         version: 5.19.3
     devDependencies:
+      '@action-validator/cli':
+        specifier: ^0.6.0
+        version: 0.6.0(@action-validator/core@0.6.0)
       '@axe-core/playwright':
         specifier: ^4.10.1
         version: 4.10.1(playwright-core@1.52.0)
@@ -92,6 +95,15 @@ importers:
         version: 3.1.3(@types/node@22.15.19)(jiti@2.4.2)(jsdom@26.1.0)(yaml@2.8.0)
 
 packages:
+
+  '@action-validator/cli@0.6.0':
+    resolution: {integrity: sha512-Z8TYOK4GqUIpI0UuspUJPB6dhr0niTumhwI5iiZVqFRXm4u05bZawnFKltpvoFUfJg9mHbbIBlleqsRJAgl53Q==}
+    hasBin: true
+    peerDependencies:
+      '@action-validator/core': 0.6.0
+
+  '@action-validator/core@0.6.0':
+    resolution: {integrity: sha512-tPglwCr8Mm8SWzwnVewwFmqRx91F0WvMsM0BRAqH4CLalyGndm53Xvp+UcUSzswpk1wkjIDYI7RyEhWMLyPkig==}
 
   '@adobe/css-tools@4.4.2':
     resolution: {integrity: sha512-baYZExFpsdkBNuvGKTKWCwKH57HRZLVtycZS05WTQNVOiXVSeAki3nU35zlRbToeMW8aHlJfyS+1C4BOv27q0A==}
@@ -1646,6 +1658,10 @@ packages:
   chalk@4.1.2:
     resolution: {integrity: sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA==}
     engines: {node: '>=10'}
+
+  chalk@5.2.0:
+    resolution: {integrity: sha512-ree3Gqw/nazQAPuJJEy+avdl7QfZMcUvmHIKgEZkGL+xOBzRvup5Hxo6LHuMceSxOabuJLJm5Yp/92R9eMmMvA==}
+    engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
 
   chalk@5.4.1:
     resolution: {integrity: sha512-zgVZuo2WcZgfUEmsn6eO3kINexW8RAE4maiQ8QNs8CtpPCSyMiYsULR3HQYkm3w8FIA3SberyMJMSldGsW+U3w==}
@@ -5150,6 +5166,13 @@ packages:
 
 snapshots:
 
+  '@action-validator/cli@0.6.0(@action-validator/core@0.6.0)':
+    dependencies:
+      '@action-validator/core': 0.6.0
+      chalk: 5.2.0
+
+  '@action-validator/core@0.6.0': {}
+
   '@adobe/css-tools@4.4.2': {}
 
   '@alloc/quick-lru@5.2.0': {}
@@ -6887,6 +6910,8 @@ snapshots:
     dependencies:
       ansi-styles: 4.3.0
       supports-color: 7.2.0
+
+  chalk@5.2.0: {}
 
   chalk@5.4.1: {}
 

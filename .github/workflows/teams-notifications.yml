@@ -35,7 +35,7 @@ jobs:
               "activitySubtitle": "${{ github.event.workflow_run.head_branch }} branch",
               "facts": [
                 { "name": "Status", "value": "Passed" },
-                { "name": "Commit", "value": "${{ github.event.workflow_run.head_sha.substring(0, 7) }}" },
+                { "name": "Commit", "value": "${{ github.event.workflow_run.head_sha }}" },
                 { "name": "Author", "value": "${{ github.event.workflow_run.actor.login }}" },
                 { "name": "Time", "value": "${{ github.event.workflow_run.created_at }}" }
               ]
@@ -83,7 +83,7 @@ jobs:
               "activitySubtitle": "${{ github.event.workflow_run.head_branch }} branch",
               "facts": [
                 { "name": "Status", "value": "Failed" },
-                { "name": "Commit", "value": "${{ github.event.workflow_run.head_sha.substring(0, 7) }}" },
+                { "name": "Commit", "value": "${{ github.event.workflow_run.head_sha }}" },
                 { "name": "Author", "value": "${{ github.event.workflow_run.actor.login }}" },
                 { "name": "Time", "value": "${{ github.event.workflow_run.created_at }}" }
               ]

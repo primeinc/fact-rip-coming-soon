@@ -129,7 +129,7 @@ jobs:
               "activityTitle": "Deployment Details",
               "activitySubtitle": "main branch",
               "facts": [
-                { "name": "Commit", "value": "${{ github.sha.substring(0, 7) }}" },
+                { "name": "Commit", "value": "${{ github.sha }}" },
                 { "name": "Author", "value": "${{ github.actor }}" },
                 { "name": "Deploy URL", "value": "${{ env.DEPLOY_URL }}" }
               ]
