@@ -94,16 +94,7 @@ if [ -n "$TARGET_FILE" ]; then
     fi
 else
     # Check all files (excluding node_modules and hidden directories)
-    find . -type f \( -name "*.md" -o -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" -o -name "*.sh" \) \
-        -not -path "*/node_modules/*" \
-        -not -path "*/.*" \
-        -not -path "./.git/*" \
-        -not -path "./test-results/*" \
-        -not -path "./playwright-report/*" \
-        -not -path "./test/test-annotation-system.md" \
-        -not -path "./test/temp-*.md" \
-        -not -path "./scripts/test-annotation-enforcement.sh" | while read -r file; do
-        
+    while IFS= read -r file; do
         # Skip binary files
         if file "$file" | grep -q "binary"; then
             continue
@@ -112,7 +103,15 @@ else
         # Check the file
         [ "$VERBOSE" = "true" ] && echo "Checking: $file"
         check_file "$file"
-    done
+    done < <(find . -type f \( -name "*.md" -o -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.json" -o -name "*.sh" \) \
+        -not -path "*/node_modules/*" \
+        -not -path "*/.*" \
+        -not -path "./.git/*" \
+        -not -path "./test-results/*" \
+        -not -path "./playwright-report/*" \
+        -not -path "./test/test-annotation-system.md" \
+        -not -path "./test/temp-*.md" \
+        -not -path "./scripts/test-annotation-enforcement.sh")
 fi
 
 # Count violations and exceptions from temp file
