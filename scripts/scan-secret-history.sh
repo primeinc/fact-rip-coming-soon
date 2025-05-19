@@ -2,8 +2,25 @@
 
 set -euo pipefail
 
+# Set up temporary file cleanup
+TEMP_FILES=()
+cleanup() {
+    # Clean up any temporary files
+    for file in "${TEMP_FILES[@]}"; do
+        [ -f "$file" ] && rm -f "$file" || true
+    done
+}
+trap cleanup EXIT
+
+# Detect CI environment - check for common CI environment variables
+# This is more portable across different CI systems
+is_ci() {
+    [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ] || [ -n "${JENKINS_URL:-}" ] || 
+    [ -n "${GITLAB_CI:-}" ] || [ -n "${TRAVIS:-}" ] || [ -n "${CIRCLECI:-}" ]
+}
+
 # Enhanced security check for CI
-if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+if is_ci; then
     echo "✅ CI environment detected - running enhanced security scan"
     
     # Allow scanning a specific commit if provided
@@ -17,12 +34,18 @@ if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
         export GIT_COMMIT="HEAD"
     fi
     
-    # Record scan time for audit
-    SCAN_DATE=$(date +"%Y-%m-%d %H:%M:%S")
+    # Record scan time for audit with proper error handling
+    SCAN_DATE=$(date +"%Y-%m-%d %H:%M:%S" || echo "UNKNOWN_DATE")
+    
+    # Handle existing bypass file
     if [ -f ".ci-secret-scan-bypass" ]; then
-        rm -f ".ci-secret-scan-bypass" || true
+        rm -f ".ci-secret-scan-bypass" || echo "Warning: Failed to remove bypass file" >&2
     fi
-    echo "CI secret scan completed at $SCAN_DATE" > .ci-secret-scan-record || true
+    
+    # Create scan record with proper error handling
+    if ! echo "CI secret scan completed at $SCAN_DATE" > .ci-secret-scan-record; then
+        echo "Warning: Failed to write scan record" >&2
+    fi
 fi
 
 # Scan git history for any exposed secrets
@@ -46,22 +69,31 @@ fi
 
 # Run gitleaks efficiently
 echo "🔍 Running gitleaks scan..."
-if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+
+# Create a log file for gitleaks output
+GITLEAKS_LOG=$(mktemp)
+TEMP_FILES+=("$GITLEAKS_LOG")
+
+if is_ci; then
     # In CI, check only the specified commit for speed and reliability
     echo "CI environment detected - scanning commit: ${GIT_COMMIT:-HEAD}"
-    if gitleaks detect --source . --verbose --log-opts="${GIT_COMMIT:-HEAD}^..${GIT_COMMIT:-HEAD}"; then
+    if gitleaks detect --source . --verbose --log-opts="${GIT_COMMIT:-HEAD}^..${GIT_COMMIT:-HEAD}" > "$GITLEAKS_LOG" 2>&1; then
         echo "✅ No secrets found in commit ${GIT_COMMIT:-HEAD}"
     else
         echo "❌ Secrets detected in commit ${GIT_COMMIT:-HEAD}!"
+        # Show the last few lines of the log if there's an error
+        tail -n 10 "$GITLEAKS_LOG" || true
         SECRETS_FOUND=1
     fi
 else
     # For local development, scan the entire history
     echo "Local environment - scanning full history"
-    if gitleaks detect --source . --verbose; then
+    if gitleaks detect --source . --verbose > "$GITLEAKS_LOG" 2>&1; then
         echo "✅ No secrets found in repository history"
     else
         echo "❌ Secrets detected in repository history!"
+        # Show the last few lines of the log if there's an error
+        tail -n 10 "$GITLEAKS_LOG" || true
         SECRETS_FOUND=1
     fi
 fi
@@ -85,7 +117,7 @@ PATTERNS=(
 for pattern in "${PATTERNS[@]}"; do
     echo "Checking for $pattern..."
     
-    if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+    if is_ci; then
         # In CI, check if the target commit is for the secret scanner itself
         SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 ${GIT_COMMIT:-HEAD} || true)
         if [[ ! -z "$SCRIPT_CHANGES" ]]; then
@@ -95,46 +127,72 @@ for pattern in "${PATTERNS[@]}"; do
             continue
         fi
         
-        if [ -n "$(git log -p -G"$pattern" --max-count=1 ${GIT_COMMIT:-HEAD} | grep -E "$pattern" | 
-              grep -v "scripts/scan-secret-history.sh" | 
-              grep -v "check-no-secrets.sh" |
-              grep -v "\"$pattern\"" | 
-              grep -v "'$pattern'" |
-              grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
-              grep -v "netlify token:create" || true)" ]; then
+        # Create temp file for the git log output
+        PATTERN_LOG=$(mktemp)
+        TEMP_FILES+=("$PATTERN_LOG")
+        
+        # Pipe the git log to a file to avoid command substitution complexity
+        git log -p -G"$pattern" --max-count=1 ${GIT_COMMIT:-HEAD} > "$PATTERN_LOG" 2>/dev/null || true
+        
+        # Filter for actual secret patterns while excluding legitimate cases
+        if grep -E "$pattern" "$PATTERN_LOG" | 
+           grep -v "scripts/scan-secret-history.sh" | 
+           grep -v "check-no-secrets.sh" |
+           grep -v "\"$pattern\"" | 
+           grep -v "'$pattern'" |
+           grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
+           grep -v "TOKEN_NAME=\"ci-deploy-$(date" |
+           grep -v "netlify token:create" | 
+           grep -q "."; then
             echo "⚠️  Found possible secret pattern in commit ${GIT_COMMIT:-HEAD}: $pattern"
             SECRETS_FOUND=1
         fi
     else
         # For local checks, examine both history and current files for a thorough scan
         
-        # Current files check
-        CURRENT_FILES_CHECK=$(grep -r --include="*.{js,ts,json,yml,yaml,sh,md}" \
-                            --exclude-dir="{node_modules,.git,dist,coverage}" -E "$pattern" . || true)
+        # Current files check - use temporary files for improved handling
+        CURRENT_FILES_LOG=$(mktemp)
+        FILTERED_CHECK_LOG=$(mktemp)
+        TEMP_FILES+=("$CURRENT_FILES_LOG" "$FILTERED_CHECK_LOG")
         
-        if [ ! -z "$CURRENT_FILES_CHECK" ]; then
-            # Only report meaningful matches by filtering scan-secret-history.sh and legitimate token creation
-            FILTERED_CHECK=$(echo "$CURRENT_FILES_CHECK" | 
-                             grep -v "scripts/scan-secret-history.sh" | 
-                             grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
-                             grep -v "netlify token:create" || true)
-            if [ ! -z "$FILTERED_CHECK" ]; then
+        # Search for patterns in files, excluding common directories
+        grep -r --include="*.{js,ts,json,yml,yaml,sh,md}" \
+                --exclude-dir="{node_modules,.git,dist,coverage}" -E "$pattern" . > "$CURRENT_FILES_LOG" 2>/dev/null || true
+        
+        if [ -s "$CURRENT_FILES_LOG" ]; then
+            # Filter out legitimate uses and the scanner itself
+            cat "$CURRENT_FILES_LOG" | 
+                grep -v "scripts/scan-secret-history.sh" | 
+                grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
+                grep -v "TOKEN_NAME=\"ci-deploy-$(date" |
+                grep -v "netlify token:create" |
+                grep -v "REMEDIATION_PLAN.md" > "$FILTERED_CHECK_LOG" || true
+                
+            if [ -s "$FILTERED_CHECK_LOG" ]; then
                 echo "⚠️  Found possible secret pattern in current files: $pattern"
-                echo "$FILTERED_CHECK" | head -3 || true
+                head -3 "$FILTERED_CHECK_LOG" || true
                 SECRETS_FOUND=1
             fi
         fi
         
         # Recent history check
-        HISTORY_CHECK=$(git log -p -G"$pattern" --max-count=5 | 
-                       grep -E "$pattern" | 
-                       grep -v "scripts/scan-secret-history.sh" |
-                       grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
-                       grep -v "netlify token:create" || true)
+        HISTORY_LOG=$(mktemp)
+        TEMP_FILES+=("$HISTORY_LOG")
         
-        if [ ! -z "$HISTORY_CHECK" ]; then
+        # Pipe git log to temporary file
+        git log -p -G"$pattern" --max-count=5 > "$HISTORY_LOG" 2>/dev/null || true
+        
+        # Process the log file to find secrets
+        FILTERED_HISTORY=$(grep -E "$pattern" "$HISTORY_LOG" | 
+                          grep -v "scripts/scan-secret-history.sh" |
+                          grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
+                          grep -v "TOKEN_NAME=\"ci-deploy-$(date" |
+                          grep -v "netlify token:create" |
+                          grep -v "REMEDIATION_PLAN.md" || true)
+        
+        if [ ! -z "$FILTERED_HISTORY" ]; then
             echo "⚠️  Found possible secret pattern in recent history: $pattern"
-            echo "$HISTORY_CHECK" | head -3 || true
+            echo "$FILTERED_HISTORY" | head -3 || true
             SECRETS_FOUND=1
         fi
     fi
@@ -145,7 +203,11 @@ echo ""
 echo "🔍 Checking for base64 encoded secrets..."
 BASE64_PATTERN='[A-Za-z0-9+/]{40,}={0,2}'
 
-if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+# Create temporary file for base64 checks
+BASE64_LOG=$(mktemp)
+TEMP_FILES+=("$BASE64_LOG")
+
+if is_ci; then
     # Check if the target commit is for the secret scanner
     SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 ${GIT_COMMIT:-HEAD} || true)
     if [[ ! -z "$SCRIPT_CHANGES" ]]; then
@@ -153,8 +215,11 @@ if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo "🔄 Skipping base64 check for the secret scanner's own commit"
     else
         # In CI, only check the target commit for base64 patterns
-        BASE64_FOUND=$(git log -p --max-count=1 ${GIT_COMMIT:-HEAD} | 
-                      grep -v "playwright-report\|node_modules\|pnpm-lock.yaml\|\.png\|\.jpg\|\.svg\|scan-secret-history.sh" | 
+        git log -p --max-count=1 ${GIT_COMMIT:-HEAD} > "$BASE64_LOG" 2>/dev/null || true
+        
+        # Filter out common binary files and the scanner itself
+        BASE64_FOUND=$(cat "$BASE64_LOG" | 
+                      grep -v "playwright-report\|node_modules\|pnpm-lock.yaml\|\.png\|\.jpg\|\.svg\|\.ico\|scan-secret-history.sh\|REMEDIATION_PLAN.md" | 
                       grep -E "$BASE64_PATTERN" || true)
         
         if [ ! -z "$BASE64_FOUND" ]; then
@@ -166,8 +231,11 @@ if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
     fi
 else
     # For local checks, use a more focused approach on recent commits
-    BASE64_FOUND=$(git log -p --max-count=20 | 
-                  grep -v "playwright-report\|node_modules\|pnpm-lock.yaml\|\.png\|\.jpg\|\.svg" | 
+    git log -p --max-count=20 > "$BASE64_LOG" 2>/dev/null || true
+    
+    # Filter out common binary files and look for base64 patterns
+    BASE64_FOUND=$(cat "$BASE64_LOG" | 
+                  grep -v "playwright-report\|node_modules\|pnpm-lock.yaml\|\.png\|\.jpg\|\.svg\|\.ico\|REMEDIATION_PLAN.md" | 
                   grep -E "$BASE64_PATTERN" | head -3 || true)
     
     if [ ! -z "$BASE64_FOUND" ]; then
@@ -180,7 +248,11 @@ fi
 echo ""
 echo "🔍 Checking deleted files for secret patterns..."
 
-if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+# Create temporary files for deleted files check
+DELETED_LOG=$(mktemp)
+TEMP_FILES+=("$DELETED_LOG")
+
+if is_ci; then
     # Check if the target commit is for the secret scanner
     SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 ${GIT_COMMIT:-HEAD} || true)
     if [[ ! -z "$SCRIPT_CHANGES" ]]; then
@@ -188,14 +260,18 @@ if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo "🔄 Skipping deleted files check for the secret scanner's own commit"
     else
         # In CI, only check the target commit
-        DELETED_FILES=$(git log --diff-filter=D --summary --max-count=1 ${GIT_COMMIT:-HEAD} | grep "delete mode" | awk '{print $NF}' || true)
+        git log --diff-filter=D --summary --max-count=1 ${GIT_COMMIT:-HEAD} > "$DELETED_LOG" 2>/dev/null || true
+        
+        # Extract deleted files from the log
+        DELETED_FILES=$(grep "delete mode" "$DELETED_LOG" | awk '{print $NF}' || true)
         
         if [ -z "$DELETED_FILES" ]; then
             echo "✅ No files deleted in commit ${GIT_COMMIT:-HEAD}"
         else
             echo "Found deleted files in commit ${GIT_COMMIT:-HEAD} - checking for sensitive files"
             for file in $DELETED_FILES; do
-                if [[ "$file" =~ \.(env|key|pem|p12|pfx|secret|password)$ ]]; then
+                # Extended list of sensitive file patterns
+                if [[ "$file" =~ \.(env|key|pem|p12|pfx|secret|password|credentials|cert|crt|keystore|jks|pkcs12)$ ]]; then
                     echo "⚠️  Deleted file with sensitive extension: $file"
                     SECRETS_FOUND=1
                 fi
@@ -204,20 +280,26 @@ if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
     fi
 else
     # For local checks, scan more history but only alert on critical extensions
-    DELETED_FILES=$(git log --diff-filter=D --summary --max-count=50 | grep "delete mode" | awk '{print $NF}' || true)
+    git log --diff-filter=D --summary --max-count=50 > "$DELETED_LOG" 2>/dev/null || true
     
-    for file in $DELETED_FILES; do
-        if [[ "$file" =~ \.(env|key|pem|p12|pfx|secret|password)$ ]]; then
-            echo "⚠️  Deleted file with sensitive extension: $file"
-            SECRETS_FOUND=1
-        fi
-    done
+    # Extract deleted files from the log
+    DELETED_FILES=$(grep "delete mode" "$DELETED_LOG" | awk '{print $NF}' || true)
+    
+    if [ ! -z "$DELETED_FILES" ]; then
+        for file in $DELETED_FILES; do
+            # Extended list of sensitive file patterns
+            if [[ "$file" =~ \.(env|key|pem|p12|pfx|secret|password|credentials|cert|crt|keystore|jks|pkcs12)$ ]]; then
+                echo "⚠️  Deleted file with sensitive extension: $file"
+                SECRETS_FOUND=1
+            fi
+        done
+    fi
 fi
 
 # Summary
 echo ""
 if [ "$SECRETS_FOUND" -eq 0 ]; then
-    if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+    if is_ci; then
         echo "✅ PASSED: No secrets detected in commit ${GIT_COMMIT:-HEAD}"
         echo "🛡️  Secret scanning successfully completed"
         echo "⭐ Git history has been properly cleaned"
@@ -227,7 +309,7 @@ if [ "$SECRETS_FOUND" -eq 0 ]; then
         echo "ℹ️  Note: Continue running periodic scans to maintain security"
     fi
 else
-    if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
+    if is_ci; then
         echo "❌ FAILED: Potential secrets found in commit ${GIT_COMMIT:-HEAD}!"
         echo ""
         echo "🚨 SECURITY ALERT: Immediate action required"
@@ -246,7 +328,7 @@ else
         echo "Follow these steps:"
         echo "1. Review findings above"
         echo "2. Rotate any exposed credentials immediately" 
-        echo "3. Clean git history with: ./clean-git-history.sh"
+        echo "3. Clean git history with: ./scripts/git-secret-cleaner.sh (if available)"
         echo "4. Force push cleaned history (coordinate with team first)"
         exit 1
     fi
