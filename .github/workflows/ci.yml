@@ -73,7 +73,7 @@ jobs:
         run: pnpm run lint
 
       - name: Type check
-        run: pnpm run type-check
+        run: pnpm run typecheck
 
       - name: Unit tests
         run: pnpm test -- --coverage
