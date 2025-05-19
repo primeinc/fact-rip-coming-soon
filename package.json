@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "tsc -b && eslint .",
     "test:viewport": "node test-mobile.js",
-    "ci": "pnpm run test && pnpm run build"
+    "test:smoke": "node smoke-test.js",
+    "ci": "pnpm run test && pnpm run build",
+    "prepare": "husky"
   },
   "dependencies": {
     "framer-motion": "^12.12.1",
@@ -27,6 +29,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "husky": "^9.1.7",
     "postcss": "^8.5.3",
     "tailwindcss": "3",
     "typescript": "~5.8.3",
