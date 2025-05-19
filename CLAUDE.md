@@ -108,7 +108,7 @@ pnpm run validate
 ### Common Tasks
 ```bash
 # Local testing without CI
-pnpm run test:local:npm      # Check pnpm-only
+pnpm run test:local:pnpm     # Check pnpm-only
 pnpm run test:local:config   # Check config drift
 pnpm run test:local:shell    # Check shell scripts
 

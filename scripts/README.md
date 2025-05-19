@@ -8,7 +8,7 @@ Use these pnpm scripts for easy local testing:
 
 ```bash
 # Test individual enforcement scripts locally
-pnpm run test:local:npm       # Check for npm/npx usage
+pnpm run test:local:pnpm      # Check for npm/npx usage
 pnpm run test:local:config    # Check configuration drift
 pnpm run test:local:shell     # Check shell script standards
 pnpm run test:local:all       # Run all local tests

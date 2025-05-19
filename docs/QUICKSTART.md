@@ -80,7 +80,7 @@ Test CI/CD scripts locally without CI environment:
 pnpm run test:local:all
 
 # Test specific checks
-pnpm run test:local:npm     # pnpm-only check
+pnpm run test:local:pnpm     # pnpm-only check
 pnpm run test:local:config  # configuration drift
 pnpm run test:local:shell   # shell script standards
 ```
@@ -189,9 +189,9 @@ const API_URL = config.apiUrl;
 
 Add the local test flag:
 ```bash
-ALLOW_LOCAL_TEST=true ./scripts/check-npm-usage.sh
-# OR use the npm script
-pnpm run test:local:npm
+ALLOW_LOCAL_TEST=true ./scripts/enforce-pnpm-with-annotations.sh
+# OR use the pnpm script
+pnpm run test:local:pnpm
 ```
 
 ### TypeScript errors?
