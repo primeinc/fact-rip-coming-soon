@@ -33,10 +33,26 @@ Optional environment variables:
 
 ```
 src/
-├── App.tsx          # Main component with animations
-├── Modal.tsx        # Interaction feedback modal
-├── ErrorBoundary.tsx # Error handling with telemetry
-└── index.css        # Tailwind + mobile optimizations
+├── components/      # UI components
+│   ├── CTAButton.tsx
+│   ├── ErrorBoundary.tsx
+│   ├── Modal.tsx
+│   ├── ProgressBar.tsx
+│   ├── Pulse.tsx
+│   ├── Seal.tsx
+│   └── Title.tsx
+├── hooks/          # Custom React hooks
+│   ├── useLocalStorage.ts
+│   ├── useTelemetry.ts
+│   └── useViewportHeight.ts
+├── constants/      # Configuration
+│   └── animations.ts
+├── utils/         # Utility functions
+│   └── storage.ts
+├── test/          # Test setup
+│   └── setup.ts
+├── App.tsx        # Main component
+└── index.css      # Tailwind + mobile optimizations
 ```
 
 ### Key Interactions
@@ -51,7 +67,10 @@ src/
 ```bash
 pnpm run dev          # Start dev server
 pnpm run build        # Build for production
-pnpm run test         # Type check + lint
+pnpm run test         # Run unit tests (watch mode)
+pnpm run test:run     # Run unit tests (single run)
+pnpm run test:coverage # Run tests with coverage
+pnpm run typecheck    # Type check + lint
 pnpm run ci           # Full CI pipeline
 ```
 
