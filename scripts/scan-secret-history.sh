@@ -51,7 +51,7 @@ for pattern in "${PATTERNS[@]}"; do
     FOUND=$(git log -p -G"$pattern" --all | grep -E "$pattern" | grep -v "scripts/scan-secret-history.sh" || true)
     if [ ! -z "$FOUND" ]; then
         echo "⚠️  Found possible secret pattern: $pattern"
-        echo "$FOUND" | head -5
+        echo "$FOUND" | head -5 || true
         SECRETS_FOUND=1
     fi
 done
@@ -60,9 +60,9 @@ done
 echo ""
 echo "🔍 Checking for base64 encoded secrets..."
 BASE64_PATTERN='[A-Za-z0-9+/]{40,}={0,2}'
-BASE64_FOUND=$(git log -p --all | grep -E "$BASE64_PATTERN" | grep -v "playwright-report" || true)
+BASE64_FOUND=$(git log -p --all | grep -E "$BASE64_PATTERN" | grep -v "playwright-report" | head -20 || true)
 if [ ! -z "$BASE64_FOUND" ]; then
-    echo "⚠️  Found possible base64 encoded secrets"
+    echo "⚠️  Found possible base64 encoded secrets (showing first 20 matches)"
     SECRETS_FOUND=1
 fi
 
