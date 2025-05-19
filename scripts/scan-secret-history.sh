@@ -163,12 +163,13 @@ for pattern in "${PATTERNS[@]}"; do
         
         if [ -s "$CURRENT_FILES_LOG" ]; then
             # Filter out legitimate uses and the scanner itself
-            cat "$CURRENT_FILES_LOG" | 
-                grep -v "scripts/scan-secret-history.sh" | 
+            if ! grep -v "scripts/scan-secret-history.sh" "$CURRENT_FILES_LOG" | 
                 grep -v "NEW_AUTH_TOKEN=" | 
                 grep -v "netlify token:create" |
                 grep -v "TOKEN_NAME=" |
-                grep -v "REMEDIATION_PLAN.md" > "$FILTERED_CHECK_LOG" || true
+                grep -v "REMEDIATION_PLAN.md" > "$FILTERED_CHECK_LOG"; then
+                echo "Warning: Error while filtering check results" >&2
+            fi
                 
             if [ -s "$FILTERED_CHECK_LOG" ]; then
                 echo "⚠️  Found possible secret pattern in current files: $pattern"
