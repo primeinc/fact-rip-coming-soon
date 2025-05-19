@@ -26,7 +26,7 @@ check_file() {
         ((line_number++))
         
         # Detect code block boundaries
-        if [[ "$line" =~ ^\`\`\` ]]; then
+        if echo "$line" | grep -qE '^```'; then
             if [ "$in_code_block" = false ]; then
                 in_code_block=true
             else
@@ -37,14 +37,14 @@ check_file() {
         fi
         
         # Check for annotation
-        if [[ "$line" =~ <!--[[:space:]]*pnpm-lint-disable[[:space:]]*--> ]]; then
+        if echo "$line" | grep -qE '<!--\s*pnpm-lint-disable\s*-->'; then
             annotation_active=true
             continue
         fi
         
         # Check for npm/npx usage in code blocks
         if [ "$in_code_block" = true ]; then
-            if [[ "$line" =~ (npm[[:space:]]|npx[[:space:]]) ]]; then
+            if echo "$line" | grep -qE '(npm[[:space:]]|npx[[:space:]])'; then
                 if [ "$annotation_active" = true ]; then
                     DOCUMENTED_EXCEPTIONS+=("$file:$line_number - Annotated exception: $line")
                 else

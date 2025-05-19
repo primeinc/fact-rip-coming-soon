@@ -28,7 +28,7 @@
     "test:all": "pnpm run check:pnpm && pnpm run typecheck && pnpm run test:run && pnpm run test:e2e",
     "test:enforcement": "./scripts/test-enforcement-scripts.sh",
     "ci": "set -e && pnpm run test:all && pnpm run build",
-    "prepare": "echo 'No prepare script needed'",
+    "prepare": "husky",
     "test:local:npm": "ALLOW_LOCAL_TEST=true ./scripts/enforce-pnpm-with-annotations.sh",
     "test:local:config": "ALLOW_LOCAL_TEST=true ./scripts/detect-config-drift.sh",
     "test:local:netlify": "ALLOW_LOCAL_TEST=true ./scripts/detect-netlify-drift.sh",
@@ -37,7 +37,11 @@
     "test:local:all": "pnpm run test:local:npm && pnpm run test:local:config && pnpm run test:local:shell && pnpm run check:storage && pnpm run check:timeouts",
     "test:local:ci": "ALLOW_LOCAL_TEST=true pnpm test:enforcement",
     "preflight": "./scripts/preflight-check.sh",
-    "validate": "./scripts/cycle-validation.sh"
+    "validate": "./scripts/cycle-validation.sh",
+    "enforce:local": "ALLOW_LOCAL_TEST=true node scripts/local-enforcement.mjs"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx,md,sh}": "pnpm run enforce:local"
   },
   "dependencies": {
     "framer-motion": "^12.12.1",
@@ -63,7 +67,9 @@
     "eslint-plugin-react-refresh": "^0.4.19",
     "glob": "^11.0.2",
     "globals": "^16.0.0",
+    "husky": "^9.1.7",
     "jsdom": "^26.1.0",
+    "lint-staged": "^16.0.0",
     "netlify-cli": "^21.4.2",
     "postcss": "^8.5.3",
     "tailwindcss": "3",

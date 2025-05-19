@@ -1,0 +1,21 @@
+#!/bin/sh
+# Validate commit message format
+commit_regex='^(feat|fix|docs|style|refactor|test|chore|revert)(\(.+\))?: .{1,72}$'
+commit_message=$(cat "$1")
+
+if ! echo "$commit_message" | grep -qE "$commit_regex"; then
+  echo "❌ Invalid commit message format!"
+  echo ""
+  echo "Expected format: <type>(<scope>): <subject>"
+  echo "  Types: feat, fix, docs, style, refactor, test, chore, revert"
+  echo "  Subject: max 72 characters, starts with lowercase"
+  echo ""
+  echo "Examples:"
+  echo "  feat: add user authentication"
+  echo "  fix(api): handle null response from server"
+  echo "  docs: update contributing guidelines"
+  echo ""
+  exit 1
+fi
+
+echo "✅ Commit message format valid"
