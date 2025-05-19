@@ -27,8 +27,10 @@ check_file() {
     local file_violations=0
     
     [ "$VERBOSE" = "true" ] && echo "DEBUG: Starting to read file: $file"
+    [ "$VERBOSE" = "true" ] && echo "DEBUG: File content preview: $(head -5 "$file" | cat -n)"
     while IFS= read -r line; do
         ((line_number++))
+        [ "$VERBOSE" = "true" ] && [ $line_number -le 5 ] && echo "DEBUG: Processing line $line_number: $line"
         
         # Detect code block boundaries
         if echo "$line" | grep -qE '^```'; then
@@ -71,6 +73,16 @@ check_file() {
         fi
     done < "$file"
     [ "$VERBOSE" = "true" ] && echo "DEBUG: Finished reading file: $file (line_number=$line_number)"
+    
+    # If no lines were read, try a different approach
+    if [ $line_number -eq 0 ]; then
+        [ "$VERBOSE" = "true" ] && echo "DEBUG: No lines read, trying cat method"
+        while IFS= read -r line; do
+            ((line_number++))
+            [ "$VERBOSE" = "true" ] && echo "DEBUG: cat method line $line_number: $line"
+        done < <(cat "$file")
+        [ "$VERBOSE" = "true" ] && echo "DEBUG: cat method finished (line_number=$line_number)"
+    fi
 }
 
 echo "🔍 Checking for npm/npx usage with annotation support..."
