@@ -113,7 +113,7 @@ else
         check_file "$file"
     done < "$FIND_TEMP" || true
     
-    rm -f "$FIND_TEMP"
+    rm -f "$FIND_TEMP" || true
     [ "$VERBOSE" = "true" ] && echo "DEBUG: Done scanning files"
 fi
 
@@ -127,7 +127,7 @@ if [ -f "$TEMP_FILE" ]; then
         fi
     done < "$TEMP_FILE"
     
-    rm -f "$TEMP_FILE"
+    rm -f "$TEMP_FILE" || true
 fi
 
 # Report results
