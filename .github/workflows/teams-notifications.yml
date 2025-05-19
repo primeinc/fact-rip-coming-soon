@@ -1,0 +1,116 @@
+name: Teams Notifications
+
+on:
+  workflow_run:
+    workflows: ["CI/CD"]
+    types:
+      - completed
+
+jobs:
+  notify-teams:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Send success notification
+      if: ${{ github.event.workflow_run.conclusion == 'success' }}
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      continue-on-error: true
+      run: |
+        if [ -z "$TEAMS_WEBHOOK_URL" ]; then
+          echo "Warning: TEAMS_WEBHOOK_URL not set, skipping notification"
+          exit 0
+        fi
+
+        response=$(curl -s -w "\n%{http_code}" -H "Content-Type: application/json" -d '{
+          "@type": "MessageCard",
+          "@context": "https://schema.org/extensions",
+          "summary": "CI/CD Pipeline Passed",
+          "themeColor": "28a745",
+          "title": "✅ Build Succeeded: fact-rip-coming-soon ${{ github.event.workflow_run.head_branch }}",
+          "text": "**All checks passed.** Deployment is ready.",
+          "sections": [
+            {
+              "activityTitle": "CI/CD Pipeline",
+              "activitySubtitle": "${{ github.event.workflow_run.head_branch }} branch",
+              "facts": [
+                { "name": "Status", "value": "Passed" },
+                { "name": "Commit", "value": "${{ github.event.workflow_run.head_sha.substring(0, 7) }}" },
+                { "name": "Author", "value": "${{ github.event.workflow_run.actor.login }}" },
+                { "name": "Time", "value": "${{ github.event.workflow_run.created_at }}" }
+              ]
+            }
+          ],
+          "potentialAction": [
+            {
+              "@type": "OpenUri",
+              "name": "View Workflow",
+              "targets": [
+                { "os": "default", "uri": "${{ github.event.workflow_run.html_url }}" }
+              ]
+            }
+          ]
+        }' $TEAMS_WEBHOOK_URL)
+
+        http_code=$(echo "$response" | tail -n1)
+        if [ "$http_code" != "200" ]; then
+          echo "Warning: Teams notification failed with HTTP $http_code"
+        else
+          echo "Teams notification sent successfully"
+        fi
+
+    - name: Send failure notification
+      if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      continue-on-error: true
+      run: |
+        if [ -z "$TEAMS_WEBHOOK_URL" ]; then
+          echo "Warning: TEAMS_WEBHOOK_URL not set, skipping notification"
+          exit 0
+        fi
+
+        response=$(curl -s -w "\n%{http_code}" -H "Content-Type: application/json" -d '{
+          "@type": "MessageCard",
+          "@context": "https://schema.org/extensions",
+          "summary": "CI/CD Pipeline Failed",
+          "themeColor": "e53935",
+          "title": "❌ Build Failed: fact-rip-coming-soon ${{ github.event.workflow_run.head_branch }}",
+          "text": "**At least one enforcement check failed.** Immediate attention required.",
+          "sections": [
+            {
+              "activityTitle": "CI/CD Pipeline",
+              "activitySubtitle": "${{ github.event.workflow_run.head_branch }} branch",
+              "facts": [
+                { "name": "Status", "value": "Failed" },
+                { "name": "Commit", "value": "${{ github.event.workflow_run.head_sha.substring(0, 7) }}" },
+                { "name": "Author", "value": "${{ github.event.workflow_run.actor.login }}" },
+                { "name": "Time", "value": "${{ github.event.workflow_run.created_at }}" }
+              ]
+            }
+          ],
+          "potentialAction": [
+            {
+              "@type": "OpenUri",
+              "name": "View Logs",
+              "targets": [
+                { "os": "default", "uri": "${{ github.event.workflow_run.html_url }}" }
+              ]
+            },
+            {
+              "@type": "HttpPOST",
+              "name": "Re-run Workflow",
+              "target": "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/rerun",
+              "headers": [
+                { "name": "Authorization", "value": "Bearer ${{ github.token }}" }
+              ]
+            }
+          ]
+        }' $TEAMS_WEBHOOK_URL)
+
+        http_code=$(echo "$response" | tail -n1)
+        if [ "$http_code" != "200" ]; then
+          echo "Warning: Teams notification failed with HTTP $http_code"
+        else
+          echo "Teams notification sent successfully"
+        fi

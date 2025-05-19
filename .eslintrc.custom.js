@@ -8,17 +8,17 @@ module.exports = {
           'storage.ts',
           'test-utils.ts'
         ];
-        
+
         return {
           MemberExpression(node) {
             const filename = context.getFilename();
-            const isAllowedFile = ALLOWED_FILES.some(allowed => 
+            const isAllowedFile = ALLOWED_FILES.some(allowed =>
               filename.includes(allowed)
             );
-            
+
             if (isAllowedFile) return;
-            
-            if (node.object.type === 'Identifier' && 
+
+            if (node.object.type === 'Identifier' &&
                 BANNED_GLOBALS.includes(node.object.name)) {
               context.report({
                 node,

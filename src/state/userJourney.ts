@@ -31,16 +31,16 @@ export function userJourneyReducer(
   switch (action.type) {
     case 'INITIALIZE':
       return { ...state, ...action.state };
-      
+
     case 'START_JOIN':
       return { ...state, isLoading: true };
-      
+
     case 'SHOW_MODAL':
       return { ...state, isLoading: false, modalState: 'showing' };
-      
+
     case 'MODAL_READY':
       return { ...state, modalState: 'ready' };
-      
+
     case 'CONFIRM_JOIN':
       return {
         ...state,
@@ -48,19 +48,19 @@ export function userJourneyReducer(
         joinedTimestamp: action.timestamp,
         modalState: 'ready',
       };
-      
+
     case 'CLOSE_MODAL':
       return { ...state, modalState: 'closing' };
-      
+
     case 'MODAL_HIDDEN':
       return { ...state, modalState: 'hidden' };
-      
+
     case 'RESET':
       return { ...initialState, modalState: 'hidden' };
-      
+
     case 'RESET_COMPLETE':
       return initialState;
-      
+
     default:
       return state;
   }

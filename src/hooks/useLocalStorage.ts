@@ -8,7 +8,7 @@ export function useLocalStorage<T>(
 ): [T, (value: T) => void, () => void] {
   const adapter = useStorageAdapter();
   const storage = createStorage(adapter);
-  
+
   const [storedValue, setStoredValue] = useState<T>(() => {
     const item = storage.get(key);
     if (item) {

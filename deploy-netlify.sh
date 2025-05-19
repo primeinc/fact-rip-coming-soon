@@ -1,21 +1,16 @@
 #!/bin/bash
 
-# Netlify deployment script
-echo "🚀 Deploying to Netlify..."
-
-# Check if netlify CLI is installed
-if ! command -v netlify &> /dev/null; then
-    echo "Installing Netlify CLI..."
-    pnpm add -g netlify-cli
-fi
-
-# Build the project
-echo "📦 Building project..."
-pnpm run build
-
-# Deploy to Netlify
-echo "🌐 Deploying to Netlify..."
-NETLIFY_AUTH_TOKEN=$NETLIFY_AUTH_TOKEN netlify deploy --prod --dir=dist --site=$NETLIFY_SITE_ID
-
-echo "✅ Deployment complete!"
-echo "🔗 Site URL: https://sparkly-bombolone-c419df.netlify.app/"
+# SECURITY: This script is disabled to enforce CI/CD-only deployments
+echo "❌ ERROR: Manual deployment is disabled for security reasons"
+echo "Deployments must go through CI/CD pipeline to ensure:"
+echo "- All tests pass"
+echo "- No secrets exposed"
+echo "- Proper validation"
+echo ""
+echo "To deploy:"
+echo "1. Push to main branch"
+echo "2. Let CI/CD handle deployment"
+echo "3. Monitor Teams notifications"
+echo ""
+echo "If you need emergency deployment access, contact security team"
+exit 1

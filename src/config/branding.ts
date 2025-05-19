@@ -29,13 +29,13 @@ export const BRANDING = {
       reported: 'Report Sent'
     }
   },
-  
+
   // Visual assets
   assets: {
     seal: '/custodes-seal.svg',
     favicon: '/custodes-seal.svg'
   },
-  
+
   // Colors (can be extended for theming)
   colors: {
     primary: '#DC2626', // red-600
@@ -43,7 +43,7 @@ export const BRANDING = {
     text: '#FFFFFF',
     error: '#DC2626'
   },
-  
+
   // Metadata
   meta: {
     title: 'fact.rip | The Loop Closes',

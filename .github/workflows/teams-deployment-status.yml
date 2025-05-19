@@ -1,0 +1,93 @@
+name: Teams Deployment Status
+
+on:
+  deployment_status:
+
+jobs:
+  deployment-notification:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Notify deployment success
+      if: ${{ github.event.deployment_status.state == 'success' }}
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      run: |
+        curl -H "Content-Type: application/json" -d '{
+          "@type": "MessageCard",
+          "@context": "https://schema.org/extensions",
+          "summary": "Deployment Successful",
+          "themeColor": "28a745",
+          "title": "🚀 Deployed: fact-rip-coming-soon",
+          "text": "**Production deployment completed successfully.**",
+          "sections": [
+            {
+              "activityTitle": "Deployment Status",
+              "activitySubtitle": "${{ github.event.deployment.environment }}",
+              "facts": [
+                { "name": "Status", "value": "Success" },
+                { "name": "Environment", "value": "${{ github.event.deployment.environment }}" },
+                { "name": "Ref", "value": "${{ github.event.deployment.ref }}" },
+                { "name": "Time", "value": "${{ github.event.deployment_status.created_at }}" }
+              ]
+            }
+          ],
+          "potentialAction": [
+            {
+              "@type": "OpenUri",
+              "name": "View Deployment",
+              "targets": [
+                { "os": "default", "uri": "${{ github.event.deployment_status.target_url }}" }
+              ]
+            },
+            {
+              "@type": "OpenUri",
+              "name": "Production Site",
+              "targets": [
+                { "os": "default", "uri": "https://sparkly-bombolone-c419df.netlify.app" }
+              ]
+            }
+          ]
+        }' $TEAMS_WEBHOOK_URL
+
+    - name: Notify deployment failure
+      if: ${{ github.event.deployment_status.state == 'failure' }}
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      run: |
+        curl -H "Content-Type: application/json" -d '{
+          "@type": "MessageCard",
+          "@context": "https://schema.org/extensions",
+          "summary": "Deployment Failed",
+          "themeColor": "e53935",
+          "title": "❌ Deployment Failed: fact-rip-coming-soon",
+          "text": "**Production deployment failed.** Rollback may be required.",
+          "sections": [
+            {
+              "activityTitle": "Deployment Failure",
+              "activitySubtitle": "${{ github.event.deployment.environment }}",
+              "facts": [
+                { "name": "Status", "value": "Failed" },
+                { "name": "Environment", "value": "${{ github.event.deployment.environment }}" },
+                { "name": "Ref", "value": "${{ github.event.deployment.ref }}" },
+                { "name": "Time", "value": "${{ github.event.deployment_status.created_at }}" }
+              ]
+            }
+          ],
+          "potentialAction": [
+            {
+              "@type": "OpenUri",
+              "name": "View Logs",
+              "targets": [
+                { "os": "default", "uri": "${{ github.event.deployment_status.log_url }}" }
+              ]
+            },
+            {
+              "@type": "OpenUri",
+              "name": "Rollback Guide",
+              "targets": [
+                { "os": "default", "uri": "https://github.com/${{ github.repository }}/wiki/Emergency-Rollback" }
+              ]
+            }
+          ]
+        }' $TEAMS_WEBHOOK_URL

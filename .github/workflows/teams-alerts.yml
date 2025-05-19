@@ -1,0 +1,146 @@
+name: Teams Critical Alerts
+
+on:
+  workflow_run:
+    workflows: ["CI/CD", "Chaos Engineering", "PR Security Gate"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  security-alert:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.name == 'PR Security Gate' && github.event.workflow_run.conclusion == 'failure' }}
+
+    steps:
+    - name: Alert on secrets detected
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      run: |
+        curl -H "Content-Type: application/json" -d '{
+          "@type": "MessageCard",
+          "@context": "https://schema.org/extensions",
+          "summary": "Security Violation: Secrets Detected",
+          "themeColor": "FF0000",
+          "title": "🔐 CRITICAL: Secrets Found in PR",
+          "text": "**Exposed credentials detected.** PR blocked, immediate rotation required.",
+          "sections": [
+            {
+              "activityTitle": "Security Gate Violation",
+              "activitySubtitle": "PR #${{ github.event.workflow_run.pull_requests[0].number }}",
+              "facts": [
+                { "name": "Status", "value": "Blocked" },
+                { "name": "Author", "value": "${{ github.event.workflow_run.actor.login }}" },
+                { "name": "Repository", "value": "${{ github.repository }}" },
+                { "name": "Action Required", "value": "Rotate credentials immediately" }
+              ]
+            }
+          ],
+          "potentialAction": [
+            {
+              "@type": "OpenUri",
+              "name": "View PR",
+              "targets": [
+                { "os": "default", "uri": "${{ github.event.workflow_run.pull_requests[0].html_url }}" }
+              ]
+            },
+            {
+              "@type": "OpenUri",
+              "name": "Security Runbook",
+              "targets": [
+                { "os": "default", "uri": "https://github.com/${{ github.repository }}/wiki/Security-Incident-Response" }
+              ]
+            }
+          ]
+        }' $TEAMS_WEBHOOK_URL
+
+  chaos-alert:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.name == 'Chaos Engineering' && github.event.workflow_run.conclusion == 'failure' }}
+
+    steps:
+    - name: Alert on chaos test failure
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      run: |
+        curl -H "Content-Type: application/json" -d '{
+          "@type": "MessageCard",
+          "@context": "https://schema.org/extensions",
+          "summary": "Chaos Test Failed",
+          "themeColor": "FFA500",
+          "title": "🔥 Chaos Test Failed: Rollback May Be Compromised",
+          "text": "**Production rollback capability unproven.** System resilience at risk.",
+          "sections": [
+            {
+              "activityTitle": "Chaos Engineering Failure",
+              "activitySubtitle": "Production rollback test",
+              "facts": [
+                { "name": "Test Type", "value": "Rollback Validation" },
+                { "name": "Environment", "value": "Production" },
+                { "name": "Risk Level", "value": "High" },
+                { "name": "Time", "value": "${{ github.event.workflow_run.created_at }}" }
+              ]
+            }
+          ],
+          "potentialAction": [
+            {
+              "@type": "OpenUri",
+              "name": "View Test Results",
+              "targets": [
+                { "os": "default", "uri": "${{ github.event.workflow_run.html_url }}" }
+              ]
+            },
+            {
+              "@type": "OpenUri",
+              "name": "Incident Response",
+              "targets": [
+                { "os": "default", "uri": "https://github.com/${{ github.repository }}/wiki/Chaos-Failure-Response" }
+              ]
+            }
+          ]
+        }' $TEAMS_WEBHOOK_URL
+
+  drift-alert:
+    runs-on: ubuntu-latest
+    if: ${{ contains(github.event.workflow_run.name, 'drift') && github.event.workflow_run.conclusion == 'failure' }}
+
+    steps:
+    - name: Alert on configuration drift
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      run: |
+        curl -H "Content-Type: application/json" -d '{
+          "@type": "MessageCard",
+          "@context": "https://schema.org/extensions",
+          "summary": "Configuration Drift Detected",
+          "themeColor": "FF6B6B",
+          "title": "⚠️ Configuration Drift: fact-rip-coming-soon",
+          "text": "**Deployment config out of sync.** Manual intervention required.",
+          "sections": [
+            {
+              "activityTitle": "Drift Detection Alert",
+              "activitySubtitle": "Config validation failed",
+              "facts": [
+                { "name": "Check Type", "value": "Cross-surface validation" },
+                { "name": "Repository", "value": "${{ github.repository }}" },
+                { "name": "Detection Time", "value": "${{ github.event.workflow_run.created_at }}" }
+              ]
+            }
+          ],
+          "potentialAction": [
+            {
+              "@type": "OpenUri",
+              "name": "View Drift Report",
+              "targets": [
+                { "os": "default", "uri": "${{ github.event.workflow_run.html_url }}" }
+              ]
+            },
+            {
+              "@type": "OpenUri",
+              "name": "Config Sync Guide",
+              "targets": [
+                { "os": "default", "uri": "https://github.com/${{ github.repository }}/wiki/Config-Drift-Resolution" }
+              ]
+            }
+          ]
+        }' $TEAMS_WEBHOOK_URL

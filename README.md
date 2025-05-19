@@ -1,23 +1,30 @@
-# fact.rip "Coming Soon" — Zero-Drift Production Infrastructure
+# fact.rip "Coming Soon" — Production Infrastructure
 
-Live surveillance interface with brutal production-grade testing, zero-drift enforcement, and automated CI/CD guardrails.
+Live surveillance interface with comprehensive testing, CI/CD automation, and security controls.
 
 ## ⚠️ CRITICAL: pnpm-Only Repository (Zero npm/npx Tolerance)
 
 **DO NOT use npm or npx** - This repository enforces strict pnpm-only policy with CI/CD enforcement. Any npm/npx usage will fail the build.
 
-## Zero-Drift Enforcement
+## Security & CI/CD
 
-This codebase implements **zero-drift production standards**:
+This codebase enforces the following standards:
 
-1. **No Manual Deployment** - Only CI/CD can deploy to production
+1. **CI/CD Deployment** - Automated deployment through GitHub Actions
 2. **Test Enforcement** - Every push runs unit, E2E, and accessibility tests
-3. **Configuration Extraction** - All text/config in centralized branding.ts
-4. **Post-Deploy Validation** - Smoke tests run against deployed URL
+3. **Configuration Management** - Text/config centralized in branding.ts
+4. **Post-Deploy Validation** - Smoke tests validate deployed URLs
 5. **Error Resilience** - Error boundaries with telemetry fallbacks
-6. **State Management** - Bulletproof localStorage with fallbacks
-7. **Mobile First** - Every feature tested across viewports
-8. **Accessibility** - WCAG AA compliance enforced via axe-core
+6. **State Management** - LocalStorage with fallback patterns
+7. **Mobile First** - Features tested across viewports
+8. **Accessibility** - WCAG AA compliance via axe-core
+
+### Known Limitations
+
+- **Manual Override Access**: Netlify CLI access still exists for emergency deployment
+- **Integration Testing Gap**: Tests focus on UI, not full API integrations
+- **Secret Scanning**: Only scans PRs, not historical commits
+- **Alert Management**: Teams notifications deployed but lacks deduplication
 
 ### Prerequisites
 - Node.js >= 18.0.0
@@ -42,7 +49,7 @@ pnpm run check:pnpm       # Verify no npm/npx usage
 ## Features
 
 - **State Persistence**: Tracks visits and joins via localStorage
-- **Dynamic Animations**: Different behaviors for returning visitors  
+- **Dynamic Animations**: Different behaviors for returning visitors
 - **Mobile Optimized**: 360px+ responsive with safe area support
 - **Error Resilient**: Error boundaries with telemetry integration
 - **Backend Ready**: Optional telemetry endpoint for real tracking

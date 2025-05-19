@@ -22,34 +22,34 @@ const CRITICAL_CHECKS = [
 
 async function runProductionSmokeTest() {
   console.log(`🔥 Running production smoke test against: ${SMOKE_TEST_URL}`);
-  
+
   const browser = await chromium.launch({ headless: true });
   const context = await browser.newContext();
   const page = await context.newPage();
   let passed = 0;
   let failed = 0;
-  
+
   try {
     // Load page
     console.log('📡 Loading page...');
-    const response = await page.goto(SMOKE_TEST_URL, { 
+    const response = await page.goto(SMOKE_TEST_URL, {
       waitUntil: 'networkidle',
-      timeout: 30000 
+      timeout: 30000
     });
-    
+
     if (!response.ok()) {
       throw new Error(`Page returned status ${response.status()}`);
     }
-    
+
     // Critical element checks
     console.log('\n🔍 Checking critical elements...');
     for (const check of CRITICAL_CHECKS) {
       try {
-        const element = await page.waitForSelector(check.selector, { 
+        const element = await page.waitForSelector(check.selector, {
           state: 'visible',
-          timeout: 5000 
+          timeout: 5000
         });
-        
+
         if (check.text) {
           const actualText = await element.textContent();
           // For first visitor, it should be "The Loop Closes."
@@ -60,7 +60,7 @@ async function runProductionSmokeTest() {
             throw new Error(`Expected "${check.text}" but got "${actualText}"`);
           }
         }
-        
+
         console.log(`✅ ${check.name}`);
         passed++;
       } catch (error) {
@@ -68,26 +68,26 @@ async function runProductionSmokeTest() {
         failed++;
       }
     }
-    
+
     // Functional test - button click
     console.log('\n🖱️  Testing functionality...');
     try {
       const button = await page.locator('button:has-text("Join the Watchtower")');
       await button.click();
-      
+
       // Wait for modal
-      await page.waitForSelector('[role="dialog"]', { 
+      await page.waitForSelector('[role="dialog"]', {
         state: 'visible',
-        timeout: 5000 
+        timeout: 5000
       });
-      
+
       console.log('✅ Modal opens on button click');
       passed++;
     } catch (error) {
       console.log(`❌ Modal functionality: ${error.message}`);
       failed++;
     }
-    
+
     // Performance check
     console.log('\n⚡ Checking performance...');
     const metrics = await page.evaluate(() => {
@@ -97,14 +97,14 @@ async function runProductionSmokeTest() {
         loadComplete: perf.loadEventEnd - perf.loadEventStart
       };
     });
-    
+
     if (metrics.domContentLoaded < 2000) {
       console.log(`✅ DOM loaded in ${metrics.domContentLoaded}ms`);
       passed++;
     } else {
       console.log(`⚠️  Slow DOM load: ${metrics.domContentLoaded}ms`);
     }
-    
+
     // Security headers check
     console.log('\n🔒 Checking security headers...');
     const headers = response.headers();
@@ -113,7 +113,7 @@ async function runProductionSmokeTest() {
       'x-content-type-options',
       'strict-transport-security'
     ];
-    
+
     for (const header of securityHeaders) {
       if (headers[header]) {
         console.log(`✅ ${header}: ${headers[header]}`);
@@ -122,19 +122,19 @@ async function runProductionSmokeTest() {
         console.log(`⚠️  Missing ${header}`);
       }
     }
-    
+
     // Summary
     console.log(`\n📊 Summary: ${passed} passed, ${failed} failed`);
-    
+
     if (failed > 0) {
       throw new Error(`${failed} critical checks failed`);
     }
-    
+
     console.log('\n🎉 Production smoke test PASSED!');
-    
+
   } catch (error) {
     console.error('\n❌ Production smoke test FAILED:', error.message);
-    
+
     // Take screenshot on failure
     try {
       const screenshotPath = 'smoke-test-failure.png';
@@ -143,7 +143,7 @@ async function runProductionSmokeTest() {
     } catch (e) {
       console.log('Failed to take screenshot:', e.message);
     }
-    
+
     process.exit(1);
   } finally {
     await browser.close();

@@ -9,12 +9,13 @@ gh run list --limit 1
 
 echo ""
 echo "🌐 Netlify Site:"
-echo "URL: https://sparkly-bombolone-c419df.netlify.app/"
+PROD_URL=$(cat config/deployment.json | jq -r '.netlify.productionUrl')
+echo "URL: $PROD_URL"
 echo ""
 
 # Check if the site is accessible
 echo "🔗 Testing site availability..."
-STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://sparkly-bombolone-c419df.netlify.app/)
+STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$PROD_URL")
 
 if [ "$STATUS_CODE" -eq 200 ]; then
     echo "✅ Site is live and accessible!"

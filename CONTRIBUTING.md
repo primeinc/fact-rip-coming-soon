@@ -67,8 +67,8 @@ Every test MUST:
 
 ```typescript
 // Always inject test adapter
-await initializeTestAdapter(page, { 
-  'key': 'initial-value' 
+await initializeTestAdapter(page, {
+  'key': 'initial-value'
 });
 ```
 

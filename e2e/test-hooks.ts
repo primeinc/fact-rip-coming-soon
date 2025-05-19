@@ -6,10 +6,10 @@ export const test = base.extend({
   page: async ({ page }, use) => {
     // Don't automatically clear localStorage - let tests manage this
     // Tests can use initializeTestAdapter to set up their desired state
-    
+
     // Run the test
     await use(page);
-    
+
     // Post-test cleanup (only if page is still open)
     try {
       await page.evaluate(() => {

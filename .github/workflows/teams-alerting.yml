@@ -1,0 +1,55 @@
+name: Microsoft Teams Alerting
+
+on:
+  workflow_run:
+    workflows: ["CI/CD", "Chaos Engineering"]
+    types:
+      - completed
+
+jobs:
+  alert-to-teams:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+
+    steps:
+    - name: Send Teams notification on failure
+      if: env.TEAMS_WEBHOOK_URL != ''
+      env:
+        TEAMS_WEBHOOK_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+      run: |
+        curl -H "Content-Type: application/json" -d '{
+          "@type": "MessageCard",
+          "@context": "https://schema.org/extensions",
+          "summary": "fact.rip Pipeline Failure",
+          "themeColor": "FF0000",
+          "sections": [{
+            "activityTitle": "🚨 fact.rip Pipeline Failure",
+            "facts": [
+              {
+                "name": "Workflow",
+                "value": "${{ github.event.workflow_run.name }}"
+              },
+              {
+                "name": "Repository",
+                "value": "${{ github.repository }}"
+              },
+              {
+                "name": "Branch",
+                "value": "${{ github.ref_name }}"
+              },
+              {
+                "name": "Status",
+                "value": "${{ github.event.workflow_run.conclusion }}"
+              }
+            ],
+            "markdown": true
+          }],
+          "potentialAction": [{
+            "@type": "OpenUri",
+            "name": "View Workflow Run",
+            "targets": [{
+              "os": "default",
+              "uri": "${{ github.event.workflow_run.html_url }}"
+            }]
+          }]
+        }' $TEAMS_WEBHOOK_URL

@@ -15,19 +15,19 @@ export async function initializeTestAdapter(page: Page, data: TestStorageData = 
   await page.addInitScript((testData) => {
     // Mark as playwright test to disable runtime guards
     (window as unknown as { __playwright_test__: boolean }).__playwright_test__ = true;
-    
+
     // The script will run when the page loads
     try {
       // Clear any existing storage
       localStorage.clear();
-      
+
       // Set the initial data if provided
       Object.entries(testData).forEach(([key, value]) => {
         if (value) {
           localStorage.setItem(key, value);
         }
       });
-      
+
       // Ensure events are tracked
       const win = window as unknown as WindowWithTestData;
       win.__JOURNEY_EVENTS__ = [];

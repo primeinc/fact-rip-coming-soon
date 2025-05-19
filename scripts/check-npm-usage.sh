@@ -17,7 +17,8 @@ FOUND_NPM=$(grep -riE "(^|[[:space:]]|[\"\'])npx[[:space:]]|[^p]npm[[:space:]](r
   --exclude="pnpm-lock.yaml" \
   --exclude="check-npm-usage.sh" \
   --exclude="CLAUDE.md" \
-  --exclude="README.md")
+  --exclude="README.md" \
+  --exclude="test-enforcement-scripts.sh")
 
 if [ ! -z "$FOUND_NPM" ]; then
   echo "❌ ERROR: Found npm/npx usage in the following files:"

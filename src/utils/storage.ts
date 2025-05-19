@@ -14,7 +14,7 @@ export function createStorage(adapter: {
         return null;
       }
     },
-    
+
     set: (key: string, value: string): boolean => {
       try {
         adapter.setItem(key, value);
@@ -24,7 +24,7 @@ export function createStorage(adapter: {
         return false;
       }
     },
-    
+
     remove: (key: string): boolean => {
       try {
         adapter.removeItem(key);
@@ -34,7 +34,7 @@ export function createStorage(adapter: {
         return false;
       }
     },
-    
+
     clear: (): boolean => {
       try {
         adapter.clear();

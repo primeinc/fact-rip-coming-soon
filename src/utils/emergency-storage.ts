@@ -19,7 +19,7 @@ export const emergencyStorage = {
       // Fail silently - this is emergency storage
     }
   },
-  
+
   getError(): { message: string; stack?: string; id: string } | null {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -31,7 +31,7 @@ export const emergencyStorage = {
     }
     return null;
   },
-  
+
   clearError() {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
