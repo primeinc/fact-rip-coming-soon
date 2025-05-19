@@ -20,8 +20,7 @@ Welcome to the fact.rip project! This guide will get you up and running in minut
 2. **Install pnpm (if needed)**
    ```bash
    curl -fsSL https://get.pnpm.io/install.sh | sh -
-   # OR
-   npm install -g pnpm  # One-time npm usage allowed for this
+   # Note: If pnpm is not installed, use the installer above
    ```
 
 3. **Run preflight checks**
@@ -120,10 +119,12 @@ adapter.setItem('key', 'value');
 ### 2. Package Manager
 
 **ALWAYS** use pnpm:
+
+<!-- pnpm-lint-disable -->
 ```bash
-# ❌ WRONG
-npm install package-name
-npx some-command
+# ❌ WRONG - DO NOT USE
+npm install package-name  # Shown for contrast only
+npx some-command         # Will fail CI if used in actual code
 
 # ✅ CORRECT
 pnpm add package-name

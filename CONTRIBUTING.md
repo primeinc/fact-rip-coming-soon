@@ -78,6 +78,7 @@ Before committing:
 1. Run `pnpm run check:all` - Enforces all patterns
 2. Run `pnpm run test:all` - All tests must pass
 3. Run `pnpm run typecheck` - No TypeScript errors
+4. Review any annotated exceptions in documentation (see [ANNOTATION_POLICY.md](docs/ANNOTATION_POLICY.md))
 
 ## Adding New Features
 
@@ -94,7 +95,7 @@ Before committing:
 3. Tests don't pass
 4. TypeScript errors exist
 5. pnpm lockfile is invalid
-6. npm/npx usage detected
+6. npm/npx usage detected (without proper annotation)
 
 ## Emergency Fixes
 

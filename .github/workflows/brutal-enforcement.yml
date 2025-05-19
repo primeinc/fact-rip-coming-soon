@@ -44,8 +44,8 @@ jobs:
           
           echo "🔍 BRUTAL ZERO-DRIFT ENFORCEMENT ACTIVE"
           
-          # Check pnpm-only (npm/npx = instant fail)
-          ./scripts/check-npm-usage.sh
+          # Check pnpm-only with annotation support
+          ./scripts/enforce-pnpm-with-annotations.sh
           
           # Check for any secrets
           ./scripts/check-no-secrets.sh

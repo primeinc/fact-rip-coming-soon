@@ -34,7 +34,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Check pnpm-only policy
-        run: ./scripts/check-npm-usage.sh
+        run: ./scripts/enforce-pnpm-with-annotations.sh
 
       - name: Check for secrets in repository
         run: ./scripts/check-no-secrets.sh
