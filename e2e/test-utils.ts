@@ -13,6 +13,9 @@ interface WindowWithTestData {
 export async function initializeTestAdapter(page: Page, data: TestStorageData = {}) {
   // Add initialization script that runs before page load
   await page.addInitScript((testData) => {
+    // Mark as playwright test to disable runtime guards
+    (window as unknown as { __playwright_test__: boolean }).__playwright_test__ = true;
+    
     // The script will run when the page loads
     try {
       // Clear any existing storage

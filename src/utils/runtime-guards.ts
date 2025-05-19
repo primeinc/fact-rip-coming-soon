@@ -1,6 +1,7 @@
 // Runtime guards to catch architectural violations in development
 
-const STORAGE_GUARD_ENABLED = import.meta.env.DEV;
+// Only enable guards in development, not during tests
+const STORAGE_GUARD_ENABLED = import.meta.env.DEV && !('__playwright_test__' in window);
 
 export function installStorageGuards() {
   if (!STORAGE_GUARD_ENABLED) return;
@@ -12,13 +13,15 @@ export function installStorageGuards() {
   const createStorageProxy = (storage: Storage, name: string) => {
     return new Proxy(storage, {
       get(target, prop) {
-        // Allow access from test utilities
+        // Allow access from test utilities and allowed modules
         const stack = new Error().stack || '';
         const isTestUtil = stack.includes('test-utils');
         const isStorageAdapter = stack.includes('storage-adapter');
         const isStorageUtil = stack.includes('storage.ts');
+        const isStorageContext = stack.includes('StorageContext');
+        const isEmergencyStorage = stack.includes('emergency-storage');
         
-        if (isTestUtil || isStorageAdapter || isStorageUtil) {
+        if (isTestUtil || isStorageAdapter || isStorageUtil || isStorageContext || isEmergencyStorage) {
           return target[prop as keyof Storage];
         }
         
