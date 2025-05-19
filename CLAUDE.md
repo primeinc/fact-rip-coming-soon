@@ -49,11 +49,20 @@ The app implements specific symbolic animations:
 2. **Deployment Configs**: Both `vercel.json` and `netlify.toml` are preconfigured
 3. **Build Output**: The production build outputs to `dist/` directory
 
-### Known Issues
+### Implemented Features
+
+1. **Functional CTA Button**: Click handler logs to console and localStorage
+2. **State Persistence**: Tracks first-time vs returning visitors
+3. **Dynamic Animations**: Different entry animations based on visit history
+4. **Responsive Design**: Proper mobile breakpoints (375px+)
+5. **Symbolic Timing**: Animations reflect epistemic weight, not defaults
+
+### Outstanding Issues
 
 1. Tailwind CSS v4 causes PostCSS errors - must stay on v3
 2. The custodes-seal.svg is a placeholder and should be replaced with actual branding
-3. No actual click handler on the "Join the Watchtower" button
+3. No actual Watchtower integration (currently shows alert)
+4. Deployment requires manual Vercel authentication
 
 ### Development Guidelines
 
