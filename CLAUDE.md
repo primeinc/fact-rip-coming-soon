@@ -60,6 +60,8 @@ Single-page React app for fact.rip - a civic memory utility. The page serves as 
 4. **Build/deploy automation** - CI does deploy to Netlify
 5. **Basic drift detection** - Checks for config inconsistencies
 6. **GitHub Secrets** - All secrets properly managed via GitHub
+7. **Shell script error handling** - 12 scripts updated with set -euo pipefail
+8. **YAML syntax fixes** - ci.yml workflow properly formatted
 
 ### Critical Gaps (Not Actually Enforced):
 1. **Manual CLI deploys still possible** - Human operators retain Netlify access
@@ -68,6 +70,11 @@ Single-page React app for fact.rip - a civic memory utility. The page serves as 
 4. **Rollback testing is simulated** - Not proven on live production traffic
 5. **No privilege restrictions** - Full admin access remains
 6. **Alert noise problem** - No deduplication or smart routing
+7. **CI Theater** - Enforcement scripts violate their own standards:
+   - Hardcoded values in detect-config-drift.sh and enforce-shell-standards.sh
+   - OS-specific commands without platform guards
+   - 8 shell script violations blocking CI/CD
+8. **Adversarial test mismatch** - Tests expect wrong error text
 
 ## Known Security Vulnerabilities
 
@@ -116,6 +123,8 @@ DO NOT claim the following without verification:
 - Site ID: 33e2505e-7a9d-4867-8fbf-db91ca602087
 - Last deployment: Via CI (but manual still possible)
 - Smoke tests: Pass (but only check UI elements)
+- CI/CD Status: **FAILING** - 8 shell script violations
+- Pipeline State: **CI Theater** - enforces standards it doesn't follow
 
 ## Development Workflow
 
@@ -151,8 +160,23 @@ This is a well-architected React app with good CI/CD practices, but:
 2. It's not "bulletproof" - critical gaps remain
 3. It's not fully tested - only UI, not integrations
 4. It's not secure - privilege escalation possible
+5. **CI is Theater** - enforcement scripts violate their own standards
+6. **8 blocking violations** - CI/CD cannot be trusted until fixed:
+   - Hardcoded values in enforcement scripts
+   - OS-specific commands without guards
+   - Husky deprecation script issues
+   - File operations without error handling
 
 Use this codebase as a good starting point, but don't trust the "production-ready" claims without closing all identified gaps.
+
+## Critical TODOs (Must Fix Before Production)
+
+1. **Fix 8 shell script violations** - CI is blocked
+2. **Replace hardcoded values** - Use environment variables
+3. **Add OS detection guards** - For brew/apt-get/yum
+4. **Update adversarial tests** - Expect "The Loop Fractures"
+5. **Clean YAML workflows** - Fix all lint errors
+6. **Remove manual deploy access** - Lock down Netlify
 
 ## Development Guidelines
 

@@ -1,10 +1,11 @@
+---
 name: Brutal Zero-Drift Enforcement
 
-on:
+'on':
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
     - cron: '*/10 * * * *'  # Every 10 minutes
 
@@ -13,110 +14,138 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - uses: pnpm/action-setup@v2
-      with:
-        version: 9
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'pnpm'
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
 
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-    - name: Test enforcement scripts
-      run: ./scripts/test-enforcement-scripts.sh
+      - name: Absolute enforcement of all standards
+        run: |
+          set -euo pipefail
+          
+          echo "🔍 BRUTAL ZERO-DRIFT ENFORCEMENT ACTIVE"
+          
+          # Check pnpm-only (npm/npx = instant fail)
+          ./scripts/check-npm-usage.sh
+          
+          # Check for any secrets
+          ./scripts/check-no-secrets.sh
+          
+          # Scan entire git history for secrets
+          ./scripts/scan-secret-history.sh
+          
+          # Check lockfile version
+          ./scripts/validate-lockfile.sh
+          
+          # Enforce storage patterns
+          ./scripts/enforce-storage-pattern.sh
+          
+          # No timing patterns allowed
+          ./scripts/enforce-no-timeouts.sh
+          
+          # Shell script standards
+          ./scripts/enforce-shell-standards.sh
+          
+          # Detect config drift
+          ./scripts/detect-config-drift.sh
+          
+          # Detect Netlify drift
+          ./scripts/detect-netlify-drift.sh
+          
+          # Check deployment configuration
+          ./scripts/check-deployment.sh
 
-    - name: Run unified enforcement
-      env:
-        CI: true
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      run: node scripts/enforce-all.js
+      - name: Run ALL tests (no exceptions)
+        run: |
+          pnpm test:all
+          
+      - name: Verify CI scripts are bulletproof
+        run: |
+          pnpm test:enforcement
 
-    - name: Atomic drift validation
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      run: node scripts/atomic-drift-validator.js
-
-    - name: Validate observability
-      env:
-        VITE_TELEMETRY_ENDPOINT: ${{ secrets.TELEMETRY_ENDPOINT }}
-        VITE_ERROR_REPORT_ENDPOINT: ${{ secrets.ERROR_REPORT_ENDPOINT }}
-        WEBHOOK_VALIDATOR_URL: ${{ secrets.WEBHOOK_VALIDATOR_URL }}
-      run: node scripts/observability-validator.js
-
-    - name: Prove rollback capability
-      if: github.ref == 'refs/heads/main'
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        KILL_SWITCH_ENABLED: true
-      run: node scripts/rollback-prover.js
-
-    - name: Alert on any failure
-      if: failure()
-      uses: 8398a7/action-slack@v3
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      with:
-        status: failure
-        text: '🚨 CRITICAL: Zero-drift enforcement failed!'
-
-  continuous-validation:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-
-    - name: Real-time drift detection
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      run: |
-        while true; do
-          if ! node scripts/atomic-drift-validator.js; then
-            echo "DRIFT DETECTED at $(date)"
-
-            # Immediate alert
-            curl -X POST ${{ secrets.SLACK_WEBHOOK_URL }} \
-              -H 'Content-type: application/json' \
-              -d '{
-                "text": "⚠️ DRIFT DETECTED - Immediate action required",
-                "channel": "#critical-alerts"
-              }'
-
-            # Create incident
-            curl -X POST https://api.pagerduty.com/incidents \
-              -H 'Authorization: Token token=${{ secrets.PAGERDUTY_TOKEN }}' \
-              -H 'Content-Type: application/json' \
-              -d '{
-                "incident": {
-                  "type": "incident",
-                  "title": "fact.rip Configuration Drift Detected",
-                  "service": {
-                    "id": "${{ secrets.PAGERDUTY_SERVICE_ID }}",
-                    "type": "service_reference"
-                  },
-                  "urgency": "high"
-                }
-              }'
-
-            break
+      - name: Manual deployment lockdown check
+        run: |
+          # Verify manual deployment is impossible
+          if ./deploy-netlify.sh; then
+            echo "❌ CRITICAL: Manual deployment script is not locked down!"
+            exit 1
+          else
+            echo "✅ Manual deployment properly blocked"
           fi
 
-          sleep 600  # Check every 10 minutes
-        done
+      - name: Alert on any failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const webhookUrl = '${{ secrets.TEAMS_WEBHOOK_URL }}';
+            if (webhookUrl) {
+              await fetch(webhookUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                  '@type': 'MessageCard',
+                  '@context': 'https://schema.org/extensions',
+                  themeColor: 'FF0000',
+                  title: '🚨 BRUTAL ENFORCEMENT FAILURE 🚨',
+                  text: 'Zero-drift enforcement detected violations!',
+                  sections: [{
+                    facts: [
+                      {name: 'Workflow', value: 'Brutal Zero-Drift Enforcement'},
+                      {name: 'Repository', value: '${{ github.repository }}'},
+                      {name: 'Branch', value: '${{ github.ref }}'},
+                      {name: 'Commit', value: '${{ github.sha }}'},
+                      {name: 'Triggered by', value: '${{ github.actor }}'}
+                    ]
+                  }],
+                  potentialAction: [{
+                    '@type': 'OpenUri',
+                    name: 'View Failure',
+                    targets: [{
+                      os: 'default',
+                      uri: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+                    }]
+                  }]
+                })
+              });
+            }
+
+      - name: Success notification
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const webhookUrl = '${{ secrets.TEAMS_WEBHOOK_URL }}';
+            if (webhookUrl) {
+              await fetch(webhookUrl, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                  '@type': 'MessageCard',
+                  '@context': 'https://schema.org/extensions',
+                  themeColor: '00FF00',
+                  title: '✅ Zero-Drift Enforcement Passed',
+                  text: 'All enforcement checks passed successfully',
+                  sections: [{
+                    facts: [
+                      {name: 'Workflow', value: 'Brutal Zero-Drift Enforcement'},
+                      {name: 'Repository', value: '${{ github.repository }}'},
+                      {name: 'Branch', value: '${{ github.ref }}'},
+                      {name: 'Commit', value: '${{ github.sha }}'}
+                    ]
+                  }]
+                })
+              });
+            }

@@ -14,4 +14,17 @@ echo "2. Let CI/CD handle deployment"
 echo "3. Monitor Teams notifications"
 echo ""
 echo "If you need emergency deployment access, contact security team"
+
+# Revoke any local Netlify auth tokens if present
+if [ -f "$HOME/.netlify/config.json" ]; then
+    echo "⚠️  Revoking local Netlify auth to prevent bypass..."
+    rm -f "$HOME/.netlify/config.json" || true
+fi
+
+# Remove any netlify CLI config
+if command -v netlify &> /dev/null; then
+    echo "⚠️  Disabling netlify CLI auth..."
+    netlify logout &>/dev/null || true
+fi
+
 exit 1

@@ -1,6 +1,7 @@
+---
 name: Comprehensive Failure Alerting
 
-on:
+'on':
   workflow_run:
     workflows: ["CI/CD", "Chaos Engineering"]
     types:
@@ -15,247 +16,204 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'failure' }}
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
+      - name: Gather failure context
+        run: |
+          echo "FAILED_WORKFLOW=${{ github.event.workflow_run.name }}" >> $GITHUB_ENV
+          echo "FAILED_RUN_ID=${{ github.event.workflow_run.id }}" >> $GITHUB_ENV
+          echo "FAILED_SHA=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_ENV
+          echo "FAILED_BRANCH=${{ github.event.workflow_run.head_branch }}" >> $GITHUB_ENV
+          echo "FAILURE_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_ENV
 
-    - name: Determine failure type
-      id: failure
-      run: |
-        WORKFLOW_NAME="${{ github.event.workflow_run.name }}"
-        WORKFLOW_RUN_ID="${{ github.event.workflow_run.id }}"
-        WORKFLOW_URL="${{ github.event.workflow_run.html_url }}"
+      - name: Send Teams alert
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const webhookUrl = '${{ secrets.TEAMS_WEBHOOK_URL }}';
+            if (!webhookUrl) {
+              console.log('No Teams webhook configured');
+              return;
+            }
+            
+            const failureData = {
+              workflow: process.env.FAILED_WORKFLOW,
+              runId: process.env.FAILED_RUN_ID,
+              sha: process.env.FAILED_SHA,
+              branch: process.env.FAILED_BRANCH,
+              time: process.env.FAILURE_TIME
+            };
+            
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                '@type': 'MessageCard',
+                '@context': 'https://schema.org/extensions',
+                themeColor: 'FF0000',
+                title: '🚨 Workflow Failure Alert',
+                text: `The ${failureData.workflow} workflow has failed`,
+                sections: [{
+                  facts: [
+                    {name: 'Workflow', value: failureData.workflow},
+                    {name: 'Branch', value: failureData.branch},
+                    {name: 'Commit', value: failureData.sha.substring(0, 7)},
+                    {name: 'Time', value: failureData.time},
+                    {name: 'Run ID', value: failureData.runId}
+                  ]
+                }],
+                potentialAction: [{
+                  '@type': 'OpenUri',
+                  name: 'View Failed Run',
+                  targets: [{
+                    os: 'default',
+                    uri: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${failureData.runId}`
+                  }]
+                }]
+              })
+            });
+            
+            console.log('Teams alert sent successfully');
 
-        # Analyze workflow logs to determine failure type
-        echo "workflow_name=$WORKFLOW_NAME" >> $GITHUB_OUTPUT
-        echo "workflow_url=$WORKFLOW_URL" >> $GITHUB_OUTPUT
+      - name: Create GitHub Issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 ${process.env.FAILED_WORKFLOW} Failed`,
+              body: `## Workflow Failure Alert
+            
+            The **${process.env.FAILED_WORKFLOW}** workflow has failed.
+            
+            ### Details
+            - **Branch:** ${process.env.FAILED_BRANCH}
+            - **Commit:** ${process.env.FAILED_SHA}
+            - **Time:** ${process.env.FAILURE_TIME}
+            - **Run ID:** ${process.env.FAILED_RUN_ID}
+            
+            ### Action Required
+            Please investigate and fix the failure immediately.
+            
+            [View Failed Run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${process.env.FAILED_RUN_ID})`,
+              labels: ['ci-failure', 'urgent']
+            });
+            
+            console.log(`Created issue #${issue.data.number}`);
 
-        # Get failure details
-        FAILURE_TYPE="Unknown"
-        if [[ "$WORKFLOW_NAME" == "CI/CD" ]]; then
-          FAILURE_TYPE="Build/Test/Deploy"
-        elif [[ "$WORKFLOW_NAME" == "Chaos Engineering" ]]; then
-          FAILURE_TYPE="Chaos Test/Rollback"
-        fi
+  hourly-health-check:
+    runs-on: ubuntu-latest
+    if: github.event.schedule
 
-        echo "failure_type=$FAILURE_TYPE" >> $GITHUB_OUTPUT
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Send Slack alert
-      if: env.SLACK_WEBHOOK_URL != ''
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      run: |
-        curl -X POST $SLACK_WEBHOOK_URL \
-          -H 'Content-type: application/json' \
-          -d '{
-            "text": "🚨 *fact.rip Pipeline Failure*",
-            "attachments": [{
-              "color": "danger",
-              "fields": [
-                {
-                  "title": "Workflow",
-                  "value": "${{ steps.failure.outputs.workflow_name }}",
-                  "short": true
-                },
-                {
-                  "title": "Failure Type",
-                  "value": "${{ steps.failure.outputs.failure_type }}",
-                  "short": true
-                },
-                {
-                  "title": "Repository",
-                  "value": "${{ github.repository }}",
-                  "short": true
-                },
-                {
-                  "title": "Branch",
-                  "value": "${{ github.ref_name }}",
-                  "short": true
-                },
-                {
-                  "title": "Details",
-                  "value": "<${{ steps.failure.outputs.workflow_url }}|View Workflow Run>",
-                  "short": false
-                }
-              ],
-              "footer": "fact.rip Zero-Drift Monitor",
-              "ts": ${{ github.event.workflow_run.run_started_at }}
-            }]
-          }'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 9
 
-    - name: Send PagerDuty alert
-      if: env.PAGERDUTY_TOKEN != ''
-      env:
-        PAGERDUTY_TOKEN: ${{ secrets.PAGERDUTY_TOKEN }}
-        PAGERDUTY_SERVICE_ID: ${{ secrets.PAGERDUTY_SERVICE_ID }}
-      run: |
-        curl -X POST https://api.pagerduty.com/incidents \
-          -H 'Authorization: Token token=${{ env.PAGERDUTY_TOKEN }}' \
-          -H 'Content-Type: application/json' \
-          -d '{
-            "incident": {
-              "type": "incident",
-              "title": "fact.rip Pipeline Failure: ${{ steps.failure.outputs.failure_type }}",
-              "service": {
-                "id": "${{ env.PAGERDUTY_SERVICE_ID }}",
-                "type": "service_reference"
-              },
-              "urgency": "high",
-              "body": {
-                "type": "incident_body",
-                "details": {
-                  "workflow": "${{ steps.failure.outputs.workflow_name }}",
-                  "repository": "${{ github.repository }}",
-                  "branch": "${{ github.ref_name }}",
-                  "run_url": "${{ steps.failure.outputs.workflow_url }}"
-                }
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check deployment health
+        run: |
+          ./scripts/check-deployment.sh
+
+      - name: Run smoke tests
+        run: |
+          node smoke-test.js
+
+      - name: Report status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ job.status }}';
+            const webhookUrl = '${{ secrets.TEAMS_WEBHOOK_URL }}';
+            
+            if (!webhookUrl) return;
+            
+            const color = status === 'success' ? '00FF00' : 'FF0000';
+            const title = status === 'success' ? '✅ Health Check Passed' : '❌ Health Check Failed';
+            
+            await fetch(webhookUrl, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({
+                '@type': 'MessageCard',
+                '@context': 'https://schema.org/extensions',
+                themeColor: color,
+                title: title,
+                text: 'Hourly deployment health check',
+                sections: [{
+                  facts: [
+                    {name: 'Status', value: status},
+                    {name: 'Time', value: new Date().toISOString()},
+                    {name: 'Repository', value: '${{ github.repository }}'}
+                  ]
+                }]
+              })
+            });
+
+  alert-on-high-failures:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run
+
+    steps:
+      - name: Query recent failures
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRunsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              status: 'failure',
+              created: `>=${new Date(Date.now() - 3600000).toISOString()}`
+            });
+            
+            const failureCount = runs.data.workflow_runs.length;
+            console.log(`Failures in last hour: ${failureCount}`);
+            
+            if (failureCount >= 3) {
+              const webhookUrl = '${{ secrets.TEAMS_WEBHOOK_URL }}';
+              if (webhookUrl) {
+                await fetch(webhookUrl, {
+                  method: 'POST',
+                  headers: {'Content-Type': 'application/json'},
+                  body: JSON.stringify({
+                    '@type': 'MessageCard',
+                    '@context': 'https://schema.org/extensions',
+                    themeColor: 'FF0000',
+                    title: '🚨🚨 HIGH FAILURE RATE DETECTED 🚨🚨',
+                    text: `${failureCount} workflow failures in the last hour!`,
+                    sections: [{
+                      activityTitle: 'Immediate action required',
+                      activityText: 'Multiple CI/CD failures detected. System may be unstable.',
+                      facts: [
+                        {name: 'Failures', value: failureCount.toString()},
+                        {name: 'Time Window', value: '1 hour'},
+                        {name: 'Severity', value: 'CRITICAL'}
+                      ]
+                    }],
+                    potentialAction: [{
+                      '@type': 'OpenUri',
+                      name: 'View All Failures',
+                      targets: [{
+                        os: 'default',
+                        uri: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions?query=status%3Afailure`
+                      }]
+                    }]
+                  })
+                });
               }
             }
-          }'
-
-    - name: Create GitHub issue
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const issueBody = `
-          ## Pipeline Failure Alert
-
-          **Workflow:** ${{ steps.failure.outputs.workflow_name }}
-          **Failure Type:** ${{ steps.failure.outputs.failure_type }}
-          **Branch:** ${{ github.ref_name }}
-          **Run:** ${{ steps.failure.outputs.workflow_url }}
-
-          ### Immediate Actions Required:
-          1. Review the failed workflow run
-          2. Identify root cause
-          3. Fix the issue
-          4. Verify fix in CI/CD
-
-          ### Zero-Drift Status: ❌ COMPROMISED
-
-          cc: @${context.repo.owner}
-          `;
-
-          github.rest.issues.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            title: `🚨 Pipeline Failure: ${context.payload.workflow_run.name}`,
-            body: issueBody,
-            labels: ['critical', 'pipeline-failure', 'zero-drift-violation']
-          });
-
-  alert-on-drift:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'schedule'
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - uses: pnpm/action-setup@v2
-      with:
-        version: 9
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'pnpm'
-
-    - name: Install dependencies
-      run: pnpm install --frozen-lockfile
-
-    - name: Run atomic drift validation
-      id: drift
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-      run: |
-        if ! node scripts/atomic-drift-validator.js; then
-          echo "drift_detected=true" >> $GITHUB_OUTPUT
-        else
-          echo "drift_detected=false" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Alert on drift
-      if: steps.drift.outputs.drift_detected == 'true'
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      run: |
-        curl -X POST $SLACK_WEBHOOK_URL \
-          -H 'Content-type: application/json' \
-          -d '{
-            "text": "⚠️ *Configuration Drift Detected*",
-            "attachments": [{
-              "color": "warning",
-              "fields": [
-                {
-                  "title": "Repository",
-                  "value": "${{ github.repository }}",
-                  "short": true
-                },
-                {
-                  "title": "Check Time",
-                  "value": "'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'",
-                  "short": true
-                }
-              ],
-              "footer": "fact.rip Drift Monitor",
-              "ts": '"$(date +%s)"'
-            }]
-          }'
-
-  alert-on-secret-exposure:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Run Gitleaks
-      uses: gitleaks/gitleaks-action@v2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Alert on secrets
-      if: failure()
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      run: |
-        curl -X POST $SLACK_WEBHOOK_URL \
-          -H 'Content-type: application/json' \
-          -d '{
-            "text": "🔐 *CRITICAL: Secrets Detected in PR*",
-            "attachments": [{
-              "color": "danger",
-              "fields": [
-                {
-                  "title": "Repository",
-                  "value": "${{ github.repository }}",
-                  "short": true
-                },
-                {
-                  "title": "PR",
-                  "value": "#${{ github.event.pull_request.number }}",
-                  "short": true
-                },
-                {
-                  "title": "Author",
-                  "value": "${{ github.event.pull_request.user.login }}",
-                  "short": true
-                },
-                {
-                  "title": "Action Required",
-                  "value": "IMMEDIATELY rotate exposed credentials and clean git history",
-                  "short": false
-                }
-              ],
-              "footer": "fact.rip Security Monitor",
-              "ts": '"$(date +%s)"'
-            }]
-          }'

@@ -8,14 +8,14 @@
 ```
 Error: Timed out 5000ms waiting for expect(locator).toBeVisible()
 
-Locator: locator('text=System malfunction detected')
+Locator: locator('text=The Loop Fractures')
 Expected: visible
 Received: <element(s) not found>
 Call log:
   - expect.toBeVisible with timeout 5000ms
-  - waiting for locator('text=System malfunction detected')
+  - waiting for locator('text=The Loop Fractures')
 
-    at /Users/will/Dev/fact-rip-coming-soon/e2e/adversarial-endpoints.spec.ts:175:68
+    at /Users/will/Dev/fact-rip-coming-soon/e2e/adversarial-endpoints.spec.ts:175:59
 ```
 
 # Page snapshot
@@ -36,7 +36,7 @@ Call log:
    77 |     await page.waitForTimeout(100);
    78 |
    79 |     // Wait for error boundary to appear
-   80 |     await expect(page.locator('text=System malfunction detected')).toBeVisible();
+   80 |     await expect(page.locator('text=The Loop Fractures')).toBeVisible();
    81 |
    82 |     // Click send report if available
    83 |     const reportButton = page.locator('button:has-text("Send Report")');
@@ -131,11 +131,11 @@ Call log:
   172 |     await page.waitForTimeout(100);
   173 |
   174 |     // Error boundary should still appear
-> 175 |     await expect(page.locator('text=System malfunction detected')).toBeVisible();
-      |                                                                    ^ Error: Timed out 5000ms waiting for expect(locator).toBeVisible()
+> 175 |     await expect(page.locator('text=The Loop Fractures')).toBeVisible();
+      |                                                           ^ Error: Timed out 5000ms waiting for expect(locator).toBeVisible()
   176 |
   177 |     // Recovery should work
-  178 |     const recoveryButton = page.locator('button:has-text("Resume Mission")');
+  178 |     const recoveryButton = page.locator('button:has-text("Resume Observation")');
   179 |     await expect(recoveryButton).toBeVisible();
   180 |     await recoveryButton.click();
   181 |

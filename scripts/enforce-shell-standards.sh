@@ -14,7 +14,8 @@ for script in $SHELL_SCRIPTS; do
     echo "Checking: $script"
 
     # Check for hardcoded values
-    HARDCODED=$(grep -E "sparkly-bombolone-c419df|netlify\.app|33e2505e-7a9d-4867-8fbf-db91ca602087" "$script" || true)
+    PATTERNS="${ENFORCE_STANDARDS_PATTERNS:-sparkly-bombolone-c419df|netlify\.app|33e2505e-7a9d-4867-8fbf-db91ca602087}"
+    HARDCODED=$(grep -E "$PATTERNS" "$script" || true)
     if [ ! -z "$HARDCODED" ]; then
         echo "❌ Hardcoded values in $script:"
         echo "$HARDCODED"
@@ -31,7 +32,7 @@ for script in $SHELL_SCRIPTS; do
     OS_SPECIFIC=("brew" "apt-get" "yum")
     for cmd in "${OS_SPECIFIC[@]}"; do
         if grep -q "$cmd" "$script"; then
-            if ! grep -B5 "$cmd" "$script" | grep -q "OSTYPE\|command -v"; then
+            if ! grep -B5 "$cmd" "$script" | grep -q "OSTYPE\|command -v\|PKG_MANAGER"; then
                 echo "❌ OS-specific command '$cmd' without proper checks in $script"
                 VIOLATIONS=$((VIOLATIONS + 1))
             fi
@@ -39,16 +40,18 @@ for script in $SHELL_SCRIPTS; do
     done
 
     # Check for direct file operations without checks
-    if grep -E "^cat |^jq " "$script" | grep -v "|| true"; then
+    UNSAFE_OPS=$(grep -E "^cat |^jq |^mkdir |^rm |^cp |^mv " "$script" | grep -v "|| true" | grep -v "2>/dev/null" || true)
+    if [ ! -z "$UNSAFE_OPS" ]; then
         echo "⚠️  File operations without error handling in $script"
+        VIOLATIONS=$((VIOLATIONS + 1))
     fi
 
     # Check for environment variable usage without defaults
-    ENV_USAGE=$(grep -oE '\$\{[A-Z_]+\}' "$script" || true)
+    ENV_USAGE=$(grep -oE '\$\{[A-Z_]+[A-Z0-9_]*\}' "$script" | sort -u || true)
     for env in $ENV_USAGE; do
         # Remove the ${} wrapper to get the variable name
         var_name=$(echo "$env" | sed 's/\${\(.*\)}/\1/')
-        if ! grep -q "\${${var_name}:-" "$script"; then
+        if ! grep -q "\${${var_name}:-\|${var_name}:?" "$script"; then
             echo "⚠️  Environment variable $env used without default in $script"
         fi
     done

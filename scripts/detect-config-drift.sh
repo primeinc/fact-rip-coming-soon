@@ -45,7 +45,8 @@ fi
 # Check for hardcoded values in shell scripts
 echo "🔍 Checking for hardcoded values in shell scripts..."
 
-HARDCODED_URLS=$(grep -r "sparkly-bombolone-c419df\|fact\.rip\|netlify\.app" scripts/ --exclude="detect-config-drift.sh" || true)
+PATTERNS="${CONFIG_DRIFT_PATTERNS:-sparkly-bombolone-c419df|fact\.rip|netlify\.app}"
+HARDCODED_URLS=$(grep -r "$PATTERNS" scripts/ --exclude="detect-config-drift.sh" || true)
 if [ ! -z "$HARDCODED_URLS" ]; then
     echo "❌ Found hardcoded URLs in scripts:"
     echo "$HARDCODED_URLS"

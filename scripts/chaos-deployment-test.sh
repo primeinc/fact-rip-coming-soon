@@ -21,8 +21,8 @@ echo "Current deploy: $CURRENT_DEPLOY_ID (state: $CURRENT_STATE)"
 
 # Create intentionally broken build
 echo "💣 Creating broken build artifact..."
-mkdir -p chaos-build
-cat > chaos-build/index.html << 'EOF'
+mkdir -p chaos-build || exit 1
+cat > chaos-build/index.html << 'EOF' || exit 1
 <!DOCTYPE html>
 <html>
 <head>
@@ -100,7 +100,7 @@ else
 fi
 
 # Clean up
-rm -rf chaos-build
+rm -rf chaos-build || true
 
 # Summary
 echo ""
