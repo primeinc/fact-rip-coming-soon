@@ -29,7 +29,7 @@ check_file() {
     [ "$VERBOSE" = "true" ] && echo "DEBUG: Starting to read file: $file"
     [ "$VERBOSE" = "true" ] && echo "DEBUG: File content preview: $(head -5 "$file" | cat -n)"
     
-    # Use cat method for reading files (more reliable in CI)
+    # Read file using a different approach that works in CI
     while IFS= read -r line; do
         ((line_number++))
         [ "$VERBOSE" = "true" ] && [ $line_number -le 5 ] && echo "DEBUG: Processing line $line_number: $line"
@@ -73,7 +73,7 @@ check_file() {
                 fi
             fi
         fi
-    done < <(cat "$file")
+    done < "$file"
     [ "$VERBOSE" = "true" ] && echo "DEBUG: Finished reading file: $file (line_number=$line_number)"
 }
 
