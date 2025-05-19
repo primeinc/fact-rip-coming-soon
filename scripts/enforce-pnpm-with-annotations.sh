@@ -90,7 +90,9 @@ else
         -not -path "*/.*" \
         -not -path "./.git/*" \
         -not -path "./test-results/*" \
-        -not -path "./playwright-report/*" | while read -r file; do
+        -not -path "./playwright-report/*" \
+        -not -path "./test/test-annotation-system.md" \
+        -not -path "./test/temp-*.md" | while read -r file; do
         
         # Skip binary files
         if file "$file" | grep -q "binary"; then

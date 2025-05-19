@@ -30,6 +30,7 @@
     "ci": "set -e && pnpm run test:all && pnpm run build",
     "prepare": "husky",
     "test:local:pnpm": "ALLOW_LOCAL_TEST=true ./scripts/enforce-pnpm-with-annotations.sh",
+    "test:annotation-system": "./scripts/test-annotation-enforcement.sh",
     "test:local:config": "ALLOW_LOCAL_TEST=true ./scripts/detect-config-drift.sh",
     "test:local:netlify": "ALLOW_LOCAL_TEST=true ./scripts/detect-netlify-drift.sh",
     "test:local:deployment": "ALLOW_LOCAL_TEST=true ./scripts/check-deployment.sh",

@@ -1,0 +1,109 @@
+#!/bin/bash
+set -euo pipefail
+
+# Test that the annotation enforcement script works correctly
+# This script EXPECTS failures on test cases and treats them as success
+
+echo "🧪 Testing pnpm annotation enforcement..."
+echo ""
+
+TESTS_PASSED=0
+TESTS_FAILED=0
+
+# Test 1: File with violations should fail
+echo "Test 1: Checking that violations are detected..."
+if ALLOW_LOCAL_TEST=true ./scripts/enforce-pnpm-with-annotations.sh test/test-annotation-system.md >/dev/null 2>&1; then
+    echo "❌ FAILED: Script did not detect violations in test file"
+    ((TESTS_FAILED++))
+else
+    echo "✅ PASSED: Script correctly detected violations"
+    ((TESTS_PASSED++))
+fi
+
+# Test 2: File with only annotated exceptions should pass
+echo ""
+echo "Test 2: Checking that annotated exceptions are allowed..."
+cat > test/temp-annotated.md << 'EOF'
+# Test Annotated Only
+
+<!-- pnpm-lint-disable -->
+```bash
+npm install
+npx test
+```
+EOF
+
+if ALLOW_LOCAL_TEST=true ./scripts/enforce-pnpm-with-annotations.sh test/temp-annotated.md >/dev/null 2>&1; then
+    echo "✅ PASSED: Script correctly allows annotated exceptions"
+    ((TESTS_PASSED++))
+else
+    echo "❌ FAILED: Script rejected properly annotated exceptions"
+    ((TESTS_FAILED++))
+fi
+rm -f test/temp-annotated.md
+
+# Test 3: File with no npm/npx should pass
+echo ""
+echo "Test 3: Checking that pnpm-only files pass..."
+cat > test/temp-clean.md << 'EOF'
+# Test Clean File
+
+```bash
+pnpm install
+pnpm test
+pnpm run build
+```
+EOF
+
+if ALLOW_LOCAL_TEST=true ./scripts/enforce-pnpm-with-annotations.sh test/temp-clean.md >/dev/null 2>&1; then
+    echo "✅ PASSED: Script correctly passes clean files"
+    ((TESTS_PASSED++))
+else
+    echo "❌ FAILED: Script rejected clean pnpm-only file"
+    ((TESTS_FAILED++))
+fi
+rm -f test/temp-clean.md
+
+# Test 4: Mixed file should report only unannotated violations
+echo ""
+echo "Test 4: Checking mixed file handling..."
+cat > test/temp-mixed.md << 'EOF'
+# Test Mixed File
+
+<!-- pnpm-lint-disable -->
+```bash
+npm install  # This is allowed
+```
+
+```bash
+npm test  # This should fail
+```
+EOF
+
+OUTPUT=$(ALLOW_LOCAL_TEST=true ./scripts/enforce-pnpm-with-annotations.sh test/temp-mixed.md 2>&1 || true)
+if echo "$OUTPUT" | grep -q "Found 1 unannotated npm/npx usage"; then
+    echo "✅ PASSED: Script correctly found 1 violation in mixed file"
+    ((TESTS_PASSED++))
+else
+    echo "❌ FAILED: Script did not correctly handle mixed file"
+    echo "Output was: $OUTPUT"
+    ((TESTS_FAILED++))
+fi
+rm -f test/temp-mixed.md
+
+# Summary
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📊 Test Summary"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ Passed: $TESTS_PASSED"
+echo "❌ Failed: $TESTS_FAILED"
+echo ""
+
+if [ $TESTS_FAILED -eq 0 ]; then
+    echo "🎉 All tests passed! Annotation enforcement is working correctly."
+    exit 0
+else
+    echo "💥 Some tests failed. Annotation enforcement needs fixing."
+    exit 1
+fi
