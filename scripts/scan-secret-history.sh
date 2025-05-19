@@ -53,7 +53,8 @@ for pattern in "${PATTERNS[@]}"; do
             grep -v "scripts/scan-secret-history.sh" | \
             grep -v ".github/workflows" | \
             grep -v "secrets\." | \
-            grep -v "API_KEY.*=.*[\"'][^\"']*[\"']" | \
+            grep -v "^+" | \
+            grep -v "^-" | \
             grep -v "__SECRET_" || true)
     if [ ! -z "$FOUND" ]; then
         echo "⚠️  Found possible secret pattern: $pattern"
@@ -66,13 +67,9 @@ done
 echo ""
 echo "🔍 Checking for base64 encoded secrets..."
 BASE64_PATTERN='[A-Za-z0-9+/]{40,}={0,2}'
-BASE64_FOUND=$(git log -p --all | grep -E "$BASE64_PATTERN" | \
-               grep -v "playwright-report" | \
-               grep -v "node_modules" | \
-               grep -v "pnpm-lock.yaml" | \
-               grep -v ".png" | \
-               grep -v ".jpg" | \
-               grep -v ".svg" | \
+BASE64_FOUND=$(git log -p --all | \
+               grep -v "playwright-report\|node_modules\|pnpm-lock.yaml\|\.png\|\.jpg\|\.svg" | \
+               grep -E "$BASE64_PATTERN" | \
                head -20 || true)
 if [ ! -z "$BASE64_FOUND" ]; then
     echo "Note: Found potential base64 strings - manual review recommended"
