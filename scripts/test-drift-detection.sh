@@ -37,11 +37,11 @@ echo -e "\nTest 2: Hardcoded value detection"
     # Run drift detection
     if "$SCRIPT_DIR/detect-config-drift.sh" >/dev/null 2>&1; then
         echo "❌ Failed to detect hardcoded values"
-        rm -f "$TEST_FILE"
+        rm -f "$TEST_FILE" || true
         exit 1
     else
         echo "✅ Correctly detected hardcoded values"
-        rm -f "$TEST_FILE"
+        rm -f "$TEST_FILE" || true
     fi
 ) || FAILED_TESTS=$((FAILED_TESTS + 1))
 
@@ -54,17 +54,17 @@ echo -e "\nTest 3: Missing environment variable detection"
     export EXPECTED_NETLIFY_SITE_ID="some-site-id"
     
     # Temporarily modify the script to set SITE_ID
-    cp "$SCRIPT_DIR/detect-config-drift.sh" "$SCRIPT_DIR/detect-config-drift.sh.bak"
+    cp "$SCRIPT_DIR/detect-config-drift.sh" "$SCRIPT_DIR/detect-config-drift.sh.bak" || exit 1
     sed -i '' '15a\
 SITE_ID="test-site-id"' "$SCRIPT_DIR/detect-config-drift.sh"
     
     if "$SCRIPT_DIR/detect-config-drift.sh" >/dev/null 2>&1; then
         echo "❌ Failed to detect missing environment variable"
-        mv "$SCRIPT_DIR/detect-config-drift.sh.bak" "$SCRIPT_DIR/detect-config-drift.sh"
+        mv "$SCRIPT_DIR/detect-config-drift.sh.bak" "$SCRIPT_DIR/detect-config-drift.sh" || true
         exit 1
     else
         echo "✅ Correctly detected missing environment variable"
-        mv "$SCRIPT_DIR/detect-config-drift.sh.bak" "$SCRIPT_DIR/detect-config-drift.sh"
+        mv "$SCRIPT_DIR/detect-config-drift.sh.bak" "$SCRIPT_DIR/detect-config-drift.sh" || true
     fi
 ) || FAILED_TESTS=$((FAILED_TESTS + 1))
 

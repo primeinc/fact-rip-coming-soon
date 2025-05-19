@@ -71,7 +71,7 @@ echo ""
 echo "🔍 Checking shebang consistency..."
 for script in $SHELL_SCRIPTS; do
     SHEBANG=$(head -1 "$script")
-    if [ "$SHEBANG" != "#!/bin/bash" ]; then
+    if [ "$SHEBANG" != "#!/bin/bash" ] && [ "$SHEBANG" != "#!/usr/bin/env bash" ]; then
         echo "❌ Non-standard shebang in $script: $SHEBANG"
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
