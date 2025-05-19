@@ -110,7 +110,13 @@ test.describe('fact.rip user journey', () => {
     await expect(page.locator('h1')).toHaveText(BRANDING.copy.title.firstVisit);
   });
 
-  test('keyboard navigation', async ({ page }) => {
+  test('keyboard navigation', async ({ page, browserName, isMobile }) => {
+    // Skip keyboard navigation test on mobile Safari as it handles focus differently
+    if (browserName === 'webkit' && isMobile) {
+      test.skip();
+      return;
+    }
+
     await initializeTestAdapter(page);
     await page.goto('/');
 
