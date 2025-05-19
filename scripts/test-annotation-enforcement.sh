@@ -1,5 +1,6 @@
 #!/bin/bash
-set -euo pipefail
+# This is a test script that expects some commands to fail
+# Don't use strict error handling
 
 # Test that the annotation enforcement script works correctly
 # This script EXPECTS failures on test cases and treats them as success
@@ -23,6 +24,7 @@ fi
 # Test 2: File with only annotated exceptions should pass
 echo ""
 echo "Test 2: Checking that annotated exceptions are allowed..."
+mkdir -p test
 cat > test/temp-annotated.md << 'EOF'
 # Test Annotated Only
 
