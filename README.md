@@ -141,18 +141,25 @@ No manual deploys allowed - only CI can push to production.
 
 ### Netlify Production Deployment
 
-The site automatically deploys to Netlify when pushing to the main branch:
-- Production URL: https://sparkly-bombolone-c419df.netlify.app/
-- Deployment is handled via GitHub Actions CI/CD
-- Requires `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` GitHub secrets
+⚠️ **CRITICAL**: Deployments are only valid if ALL CI/CD checks pass, including smoke tests.
 
-### Deployment Process
+#### Configuration
+- All deployment URLs and IDs are in `config/deployment.json`
+- Secrets are managed exclusively through GitHub Secrets
+- NO local .env files are allowed (CI will fail)
+
+#### Deployment Process
 
 1. Push to main branch
-2. GitHub Actions runs all tests
-3. If tests pass, builds the project
-4. Deploys to Netlify automatically
-5. Site is live at: https://sparkly-bombolone-c419df.netlify.app/
+2. CI/CD runs full test suite
+3. If ALL tests pass, deploys to Netlify
+4. Smoke tests validate the deployment
+5. Only after ALL validation passes is the deployment considered successful
+
+#### URLs
+- See `config/deployment.json` for all deployment URLs
+- Production deployments require passing smoke tests
+- Failed deployments should trigger immediate rollback
 
 ### Manual Build
 

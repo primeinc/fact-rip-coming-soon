@@ -1,0 +1,11 @@
+{
+  "netlify": {
+    "siteId": "33e2505e-7a9d-4867-8fbf-db91ca602087",
+    "productionUrl": "https://sparkly-bombolone-c419df.netlify.app",
+    "siteName": "sparkly-bombolone-c419df"
+  },
+  "domains": {
+    "production": "https://fact.rip",
+    "staging": "https://sparkly-bombolone-c419df.netlify.app"
+  }
+}

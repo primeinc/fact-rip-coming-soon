@@ -6,8 +6,11 @@
  */
 
 import { chromium } from '@playwright/test';
+import { readFileSync } from 'fs';
 
-const SMOKE_TEST_URL = process.env.SMOKE_TEST_URL || 'https://fact.rip';
+// Load deployment config
+const deploymentConfig = JSON.parse(readFileSync('config/deployment.json', 'utf-8'));
+const SMOKE_TEST_URL = process.env.SMOKE_TEST_URL || deploymentConfig.netlify.productionUrl;
 
 const CRITICAL_CHECKS = [
   { name: 'Title visible', selector: 'h1', text: 'The Loop Closes.' },

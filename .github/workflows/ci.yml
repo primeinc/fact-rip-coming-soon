@@ -9,6 +9,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20]
     
     steps:
     - uses: actions/checkout@v4
@@ -16,18 +19,24 @@ jobs:
     - uses: pnpm/action-setup@v2
       with:
         version: 9
-    
-    - name: Use Node.js 20
+        
+    - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
-        node-version: 20
+        node-version: ${{ matrix.node-version }}
         cache: 'pnpm'
     
+    - name: Install system dependencies
+      run: sudo apt-get update && sudo apt-get install -y jq
+      
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
     
     - name: Check pnpm-only policy
       run: ./scripts/check-npm-usage.sh
+    
+    - name: Check for secrets in repository
+      run: ./scripts/check-no-secrets.sh
       
     - name: Validate lockfile version
       run: ./scripts/validate-lockfile.sh
@@ -40,14 +49,14 @@ jobs:
     
     - name: Type check  
       run: pnpm exec tsc --noEmit
-    
+      
     - name: Lint
-      run: pnpm run lint
+      run: pnpm exec eslint
       
     - name: Unit tests
       run: pnpm run test:run
-      
-    - name: Install Playwright
+    
+    - name: Install Playwright browsers
       run: pnpm exec playwright install --with-deps
       
     - name: E2E tests
@@ -71,14 +80,23 @@ jobs:
     
     - name: Deploy to Netlify
       if: github.ref == 'refs/heads/main'
+      id: netlify-deploy
       env:
         NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
       run: |
-        pnpm exec netlify deploy --prod --dir=dist
-        echo "🚀 Deployed to https://sparkly-bombolone-c419df.netlify.app/"
+        # Read deployment config
+        SITE_ID=$(cat config/deployment.json | jq -r '.netlify.siteId')
+        echo "Deploying to site: $SITE_ID"
         
-  deploy:
+        # Deploy with Netlify CLI
+        OUTPUT=$(pnpm exec netlify deploy --prod --dir=dist --json)
+        DEPLOY_URL=$(echo $OUTPUT | jq -r '.deploy_url')
+        
+        echo "deploy_url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+        echo "🚀 Deployed to: $DEPLOY_URL"
+        
+  validate-deployment:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
@@ -86,24 +104,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: dist
-        path: dist
-        
-    - name: Deploy to Netlify
-      id: deploy
-      uses: nwtgck/actions-netlify@v2.0
-      with:
-        publish-dir: './dist'
-        production-branch: main
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        deploy-message: "Deploy from GitHub Actions"
-      env:
-        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        
     - uses: pnpm/action-setup@v2
       with:
         version: 9
@@ -114,14 +114,32 @@ jobs:
         node-version: 20
         cache: 'pnpm'
     
-    - name: Install dependencies for smoke test
+    - name: Install dependencies
       run: pnpm install --frozen-lockfile
     
     - name: Install Playwright browsers
-      run: pnpm exec playwright install chromium
+      run: pnpm exec playwright install --with-deps chromium
       
-    - name: Smoke test deployed URL
+    - name: Load deployment config
+      id: config
       run: |
-        SMOKE_TEST_URL=https://sparkly-bombolone-c419df.netlify.app pnpm exec node scripts/smoke-test-production.js
+        PROD_URL=$(cat config/deployment.json | jq -r '.netlify.productionUrl')
+        echo "production_url=$PROD_URL" >> $GITHUB_OUTPUT
+        
+    - name: Wait for deployment propagation
+      run: sleep 10
+      
+    - name: Smoke test production URL
       env:
-        SMOKE_TEST_URL: https://sparkly-bombolone-c419df.netlify.app
+        SMOKE_TEST_URL: ${{ steps.config.outputs.production_url }}
+      run: |
+        echo "🔥 Testing: $SMOKE_TEST_URL"
+        pnpm exec node scripts/smoke-test-production.js
+        
+    - name: Verify deployment success
+      if: failure()
+      run: |
+        echo "❌ Deployment validation failed!"
+        echo "The site may be partially deployed or broken."
+        echo "DO NOT update documentation until smoke tests pass!"
+        exit 1

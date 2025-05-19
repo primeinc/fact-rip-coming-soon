@@ -1,0 +1,13 @@
+name: Shared Playwright Setup
+
+on:
+  workflow_call:
+
+jobs:
+  playwright-setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Playwright browsers
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          echo "✅ Playwright browsers installed"
