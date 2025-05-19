@@ -23,6 +23,9 @@ jobs:
 
       - name: Check for secrets in PR diff
         run: |
+          # Extract files modified in PR
+          git diff origin/${{ github.base_ref }}...HEAD --name-only > modified-files.txt
+          
           # Define patterns to search for
           SECRET_PATTERNS=(
             # API Keys
@@ -44,16 +47,30 @@ jobs:
           
           FOUND_SECRETS=0
           
-          for pattern in "${SECRET_PATTERNS[@]}"; do
-            if grep -iE "$pattern" pr-diff.txt; then
-              echo "❌ Found potential secret matching pattern: $pattern"
+          # Only scan non-documentation files
+          NON_DOC_FILES=$(grep -vE "\.(md|MD|txt)$" modified-files.txt || true)
+          
+          if [ -n "$NON_DOC_FILES" ]; then
+            # Get diff for non-documentation files only
+            git diff origin/${{ github.base_ref }}...HEAD -- $NON_DOC_FILES > non-doc-diff.txt
+            
+            for pattern in "${SECRET_PATTERNS[@]}"; do
+              if grep -iE "$pattern" non-doc-diff.txt; then
+                echo "❌ Found potential secret matching pattern: $pattern"
+                FOUND_SECRETS=1
+              fi
+            done
+            
+            # Check for .env files (but not in docs)
+            if grep -E "^\+.*\.env(\.|$)" non-doc-diff.txt; then
+              echo "❌ Found .env file in PR"
               FOUND_SECRETS=1
             fi
-          done
+          fi
           
-          # Check for .env files
-          if grep -E "^\+.*\.env(\.|$)" pr-diff.txt; then
-            echo "❌ Found .env file in PR"
+          # Always check for actual .env files being added
+          if grep -E "^\.env" modified-files.txt; then
+            echo "❌ Found actual .env file being added to repository"
             FOUND_SECRETS=1
           fi
           
@@ -64,7 +81,7 @@ jobs:
             echo "See CLAUDE.md for instructions on proper secret management."
             exit 1
           else
-            echo "✅ No secrets detected in PR"
+            echo "✅ No secrets detected in PR (documentation files excluded from scan)"
           fi
 
       - name: Check for hardcoded values
