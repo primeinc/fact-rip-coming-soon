@@ -25,6 +25,12 @@ check_file() {
     local annotation_active=false
     local line_number=0
     
+    # Skip empty files
+    if [ ! -s "$file" ]; then
+        [ "$VERBOSE" = "true" ] && echo "DEBUG: Skipping empty file: $file"
+        return 0
+    fi
+    
     [ "$VERBOSE" = "true" ] && echo "DEBUG: Starting to read file: $file"
     
     while IFS= read -r line; do
@@ -69,7 +75,7 @@ check_file() {
                 fi
             fi
         fi
-    done < "$file" || true
+    done < "$file" || [ "$?" = "1" ] # Exit code 1 is normal at EOF without newline
     
     [ "$VERBOSE" = "true" ] && echo "DEBUG: Finished reading file: $file (line_number=$line_number)"
 }

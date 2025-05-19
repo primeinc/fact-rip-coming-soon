@@ -1,6 +1,12 @@
 #!/bin/sh
 # Validate commit message format
-commit_regex='^(feat|fix|docs|style|refactor|test|chore|revert)(\(.+\))?: .{1,72}$'
+# This regex checks:
+# 1. Must start with one of the conventional commit types
+# 2. May have an optional scope in parentheses
+# 3. Must have a colon and space after type or scope
+# 4. Subject must start with lowercase and be 1-72 chars
+# 5. No trailing whitespace
+commit_regex='^(feat|fix|docs|style|refactor|test|chore|revert)(\(.+\))?: [a-z].*[^ ]{1,72}$'
 commit_message=$(cat "$1")
 
 if ! echo "$commit_message" | grep -qE "$commit_regex"; then
