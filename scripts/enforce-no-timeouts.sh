@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Enforce no setTimeout/setInterval pattern
 # This script fails if any timing-based code is found outside animations

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Check for any npm/npx usage in the codebase
 # Exit with error if found
@@ -18,7 +19,7 @@ FOUND_NPM=$(grep -riE "(^|[[:space:]]|[\"\'])npx[[:space:]]|[^p]npm[[:space:]](r
   --exclude="check-npm-usage.sh" \
   --exclude="CLAUDE.md" \
   --exclude="README.md" \
-  --exclude="test-enforcement-scripts.sh")
+  --exclude="test-enforcement-scripts.sh" || true)
 
 if [ ! -z "$FOUND_NPM" ]; then
   echo "❌ ERROR: Found npm/npx usage in the following files:"
