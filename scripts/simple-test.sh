@@ -2,6 +2,9 @@
 # Simple test to debug CI behavior
 set -euo pipefail
 
+# Initialize count outside subshell to avoid undefined variable
+count=0
+
 echo "Testing file reading in CI..."
 
 # Create a test file
