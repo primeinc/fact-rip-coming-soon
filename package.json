@@ -25,6 +25,7 @@
     "check:timeouts": "./scripts/enforce-no-timeouts.sh",
     "check:all": "pnpm run check:pnpm && pnpm run check:storage && pnpm run check:timeouts",
     "test:all": "pnpm run check:pnpm && pnpm run typecheck && pnpm run test:run && pnpm run test:e2e",
+    "test:enforcement": "./scripts/test-enforcement-scripts.sh",
     "ci": "set -e && pnpm run test:all && pnpm run build",
     "prepare": "echo 'No prepare script needed'"
   },

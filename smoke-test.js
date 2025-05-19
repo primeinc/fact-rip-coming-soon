@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { chromium } from 'playwright';
+import { chromium } from '@playwright/test';
 import fs from 'fs/promises';
 import path from 'path';
 
