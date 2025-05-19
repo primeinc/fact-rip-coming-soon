@@ -20,9 +20,9 @@ if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
     # Record scan time for audit
     SCAN_DATE=$(date +"%Y-%m-%d %H:%M:%S")
     if [ -f ".ci-secret-scan-bypass" ]; then
-        rm -f ".ci-secret-scan-bypass"
+        rm -f ".ci-secret-scan-bypass" || true
     fi
-    echo "CI secret scan completed at $SCAN_DATE" > .ci-secret-scan-record
+    echo "CI secret scan completed at $SCAN_DATE" > .ci-secret-scan-record || true
 fi
 
 # Scan git history for any exposed secrets
