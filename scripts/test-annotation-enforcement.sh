@@ -15,7 +15,7 @@ TESTS_FAILED=0
 echo "Test 1: Checking that violations are detected..."
 echo "DEBUG: Looking for test/test-annotation-system.md"
 ls -la test/test-annotation-system.md || echo "File not found"
-if ALLOW_LOCAL_TEST=true ./scripts/enforce-pnpm-with-annotations.sh test/test-annotation-system.md >/dev/null 2>&1; then
+if ALLOW_LOCAL_TEST=true VERBOSE=true ./scripts/enforce-pnpm-with-annotations.sh test/test-annotation-system.md 2>&1; then
     echo "❌ FAILED: Script did not detect violations in test file"
     ((TESTS_FAILED++))
 else
@@ -39,7 +39,7 @@ npx test
 EOF
 
 echo "DEBUG: Running script on test/temp-annotated.md"
-if ALLOW_LOCAL_TEST=true ./scripts/enforce-pnpm-with-annotations.sh test/temp-annotated.md; then
+if ALLOW_LOCAL_TEST=true VERBOSE=true ./scripts/enforce-pnpm-with-annotations.sh test/temp-annotated.md; then
     echo "✅ PASSED: Script correctly allows annotated exceptions"
     ((TESTS_PASSED++))
 else
@@ -62,7 +62,7 @@ pnpm run build
 EOF
 
 echo "DEBUG: Running script on test/temp-clean.md"
-if ALLOW_LOCAL_TEST=true ./scripts/enforce-pnpm-with-annotations.sh test/temp-clean.md; then
+if ALLOW_LOCAL_TEST=true VERBOSE=true ./scripts/enforce-pnpm-with-annotations.sh test/temp-clean.md; then
     echo "✅ PASSED: Script correctly passes clean files"
     ((TESTS_PASSED++))
 else
@@ -88,7 +88,7 @@ npm test  # This should fail
 EOF
 
 echo "DEBUG: Running script on test/temp-mixed.md"
-OUTPUT=$(ALLOW_LOCAL_TEST=true ./scripts/enforce-pnpm-with-annotations.sh test/temp-mixed.md 2>&1 || true)
+OUTPUT=$(ALLOW_LOCAL_TEST=true VERBOSE=true ./scripts/enforce-pnpm-with-annotations.sh test/temp-mixed.md 2>&1 || true)
 echo "DEBUG: Output was: $OUTPUT"
 if echo "$OUTPUT" | grep -q "Found 1 unannotated npm/npx usage"; then
     echo "✅ PASSED: Script correctly found 1 violation in mixed file"

@@ -26,6 +26,7 @@ check_file() {
     local line_number=0
     local file_violations=0
     
+    [ "$VERBOSE" = "true" ] && echo "DEBUG: Starting to read file: $file"
     while IFS= read -r line; do
         ((line_number++))
         
@@ -69,6 +70,7 @@ check_file() {
             fi
         fi
     done < "$file"
+    [ "$VERBOSE" = "true" ] && echo "DEBUG: Finished reading file: $file (line_number=$line_number)"
 }
 
 echo "🔍 Checking for npm/npx usage with annotation support..."
@@ -78,6 +80,9 @@ echo ""
 if [ -n "$TARGET_FILE" ]; then
     if [ -f "$TARGET_FILE" ]; then
         [ "$VERBOSE" = "true" ] && echo "Checking single file: $TARGET_FILE"
+        [ "$VERBOSE" = "true" ] && echo "DEBUG: File exists, checking if readable: $(stat -f '%A' "$TARGET_FILE" 2>/dev/null || stat -c '%a' "$TARGET_FILE" 2>/dev/null || echo 'stat failed')"
+        [ "$VERBOSE" = "true" ] && echo "DEBUG: File size: $(wc -c < "$TARGET_FILE" || echo 'wc failed')"
+        [ "$VERBOSE" = "true" ] && echo "DEBUG: First line: $(head -1 "$TARGET_FILE" || echo 'head failed')"
         check_file "$TARGET_FILE"
     else
         echo "Error: File not found: $TARGET_FILE"
