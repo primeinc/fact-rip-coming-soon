@@ -67,8 +67,16 @@ if ! echo "$CONTENT" | grep -q "fact.rip"; then
     exit 1
 fi
 
-if ! echo "$CONTENT" | grep -q "Join the Watchtower"; then
-    echo "❌ Production content missing CTA"
+# The CTA text is in the JavaScript bundle, not initial HTML
+# Check for the JS file that contains our app code
+if ! echo "$CONTENT" | grep -q "assets/index-"; then
+    echo "❌ Production content missing JavaScript bundle"
+    exit 1
+fi
+
+# Verify the app div exists (React will render into this)
+if ! echo "$CONTENT" | grep -q '<div id="root">'; then
+    echo "❌ Production content missing root element"
     exit 1
 fi
 
