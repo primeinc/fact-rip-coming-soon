@@ -22,15 +22,8 @@ test.describe('adversarial endpoint testing', () => {
       waitUntil: 'networkidle'
     });
 
-    // Trigger a real React error using window.onerror
-    await page.evaluate(() => {
-      setTimeout(() => {
-        throw new Error('Test error for error boundary');
-      }, 0);
-    });
-    
-    // Wait for error boundary to render
-    await page.waitForTimeout(1000);
+    // Click the button to trigger the test error
+    await page.click('#test-error-trigger', { timeout: 5000 });
 
     // Check error boundary is showing
     await expect(page.locator('text=The Loop Fractures')).toBeVisible();
@@ -58,15 +51,8 @@ test.describe('adversarial endpoint testing', () => {
 
     await page.goto('/');
 
-    // Trigger error with timeout
-    await page.evaluate(() => {
-      setTimeout(() => {
-        throw new Error('Test error without endpoints');
-      }, 0);
-    });
-    
-    // Wait for error boundary
-    await page.waitForTimeout(1000);
+    // Click test error trigger
+    await page.click('#test-error-trigger', { timeout: 5000 });
 
     // Verify error boundary showing
     await expect(page.locator('text=The Loop Fractures')).toBeVisible();
