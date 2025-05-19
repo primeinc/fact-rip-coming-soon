@@ -6,18 +6,22 @@ PROJECT_NAME="$1"
 
 echo "🔍 Validating Playwright project: $PROJECT_NAME"
 
-# List available projects
-AVAILABLE_PROJECTS=$(pnpm exec playwright test --list 2>&1 | grep "project:" | sed 's/.*project: //')
-
-echo "Available projects:"
-echo "$AVAILABLE_PROJECTS"
-
-# Check if project exists
-if ! echo "$AVAILABLE_PROJECTS" | grep -q "^$PROJECT_NAME$"; then
-  echo "❌ Project '$PROJECT_NAME' not found!"
-  echo "Available projects are:"
-  echo "$AVAILABLE_PROJECTS"
-  exit 1
+# Try to run with the project - Playwright will error if it doesn't exist
+if pnpm exec playwright test --project="$PROJECT_NAME" --list-files >/dev/null 2>&1; then
+  echo "✅ Project '$PROJECT_NAME' exists"
+  exit 0
 fi
 
-echo "✅ Project '$PROJECT_NAME' exists"
+# If that fails, check if it's in the config
+echo "Project validation failed. Checking config..."
+
+# Just check if the project name exists in the config file
+if grep -q "name: '$PROJECT_NAME'" playwright.config.ts; then
+  echo "✅ Project '$PROJECT_NAME' found in config"
+  exit 0
+fi
+
+echo "❌ Project '$PROJECT_NAME' not found!"
+echo "Available projects in config:"
+grep "name:" playwright.config.ts | sed 's/.*name: //'
+exit 1

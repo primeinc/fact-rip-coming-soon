@@ -25,12 +25,23 @@ rm -rf test-tmp || true
 # Test detect-config-drift.sh
 echo ""
 echo "Testing detect-config-drift.sh..."
-# Test that it runs without error with local test flag
-if ! ALLOW_LOCAL_TEST=true ./scripts/detect-config-drift.sh 2>/dev/null; then
-    echo "❌ detect-config-drift.sh failed with error"
-    FAILED_TESTS=$((FAILED_TESTS + 1))
+# Test that it runs without error - in CI it should have proper env vars
+if [ -n "${CI:-}" ]; then
+    # In CI, pass through the environment
+    if ! ./scripts/detect-config-drift.sh 2>/dev/null; then
+        echo "❌ detect-config-drift.sh failed with error"
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    else
+        echo "✅ detect-config-drift.sh runs without error"
+    fi
 else
-    echo "✅ detect-config-drift.sh runs without error"
+    # Local test with flag
+    if ! ALLOW_LOCAL_TEST=true ./scripts/detect-config-drift.sh 2>/dev/null; then
+        echo "❌ detect-config-drift.sh failed with error"
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    else
+        echo "✅ detect-config-drift.sh runs without error"
+    fi
 fi
 
 # Test enforce-shell-standards.sh syntax
