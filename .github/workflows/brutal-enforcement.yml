@@ -44,6 +44,11 @@ jobs:
           
           echo "🔍 BRUTAL ZERO-DRIFT ENFORCEMENT ACTIVE"
           
+          # Debug file reading in CI
+          echo "=== CI FILE READING DEBUG ==="
+          ./scripts/simple-test.sh
+          echo "=== END DEBUG ==="
+          
           # Test annotation system first
           ./scripts/test-annotation-enforcement.sh
           
