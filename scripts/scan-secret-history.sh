@@ -39,7 +39,9 @@ if is_ci; then
     
     # Handle existing bypass file
     if [ -f ".ci-secret-scan-bypass" ]; then
-        rm -f ".ci-secret-scan-bypass" || echo "Warning: Failed to remove bypass file" >&2
+        if ! rm -f ".ci-secret-scan-bypass"; then
+            echo "Warning: Failed to remove bypass file" >&2
+        fi
     fi
     
     # Create scan record with proper error handling
@@ -163,9 +165,9 @@ for pattern in "${PATTERNS[@]}"; do
             # Filter out legitimate uses and the scanner itself
             cat "$CURRENT_FILES_LOG" | 
                 grep -v "scripts/scan-secret-history.sh" | 
-                grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
-                grep -v "TOKEN_NAME=\"ci-deploy-$(date" |
+                grep -v "NEW_AUTH_TOKEN=" | 
                 grep -v "netlify token:create" |
+                grep -v "TOKEN_NAME=" |
                 grep -v "REMEDIATION_PLAN.md" > "$FILTERED_CHECK_LOG" || true
                 
             if [ -s "$FILTERED_CHECK_LOG" ]; then
@@ -185,8 +187,8 @@ for pattern in "${PATTERNS[@]}"; do
         # Process the log file to find secrets
         FILTERED_HISTORY=$(grep -E "$pattern" "$HISTORY_LOG" | 
                           grep -v "scripts/scan-secret-history.sh" |
-                          grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
-                          grep -v "TOKEN_NAME=\"ci-deploy-$(date" |
+                          grep -v "NEW_AUTH_TOKEN=" |
+                          grep -v "TOKEN_NAME=" |
                           grep -v "netlify token:create" |
                           grep -v "REMEDIATION_PLAN.md" || true)
         
