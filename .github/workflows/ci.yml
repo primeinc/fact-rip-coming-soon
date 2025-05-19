@@ -58,9 +58,15 @@ jobs:
         run: node scripts/enforce-all.js
 
       - name: Check deployment configuration drift
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: ./scripts/detect-config-drift.sh
 
       - name: Check Netlify configuration drift
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: ./scripts/detect-netlify-drift.sh
 
       - name: Lint check
