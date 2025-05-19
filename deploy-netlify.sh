@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # SECURITY: This script is disabled to enforce CI/CD-only deployments
 echo "❌ ERROR: Manual deployment is disabled for security reasons"

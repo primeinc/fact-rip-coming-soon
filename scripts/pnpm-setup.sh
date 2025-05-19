@@ -3,7 +3,7 @@
 # Setup script for fact.rip coming soon page
 # This enforces pnpm-only development
 
-set -e
+set -euo pipefail
 
 echo "🔍 Checking for pnpm..."
 if ! command -v pnpm &> /dev/null; then

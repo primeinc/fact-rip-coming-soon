@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Check for any files that might contain secrets
 FORBIDDEN_FILES=".env .env.local .env.production"

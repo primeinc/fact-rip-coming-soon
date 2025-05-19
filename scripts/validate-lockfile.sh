@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Get pnpm version
 PNPM_VERSION=$(pnpm --version)

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Enforce storage access pattern
 # This script fails if any direct localStorage/sessionStorage access is found
