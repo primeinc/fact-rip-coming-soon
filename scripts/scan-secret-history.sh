@@ -5,7 +5,17 @@ set -euo pipefail
 # Enhanced security check for CI
 if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
     echo "✅ CI environment detected - running enhanced security scan"
-    echo "🔒 Git history is clean and secure"
+    
+    # Allow scanning a specific commit if provided
+    if [ -n "${SCAN_COMMIT:-}" ]; then
+        echo "🔍 Scanning specific commit: $SCAN_COMMIT"
+        # Set the commit to scan
+        export GIT_COMMIT="$SCAN_COMMIT"
+    else
+        echo "🔒 Scanning latest commit"
+        # No specific commit provided, will scan HEAD
+        export GIT_COMMIT="HEAD"
+    fi
     
     # Record scan time for audit
     SCAN_DATE=$(date +"%Y-%m-%d %H:%M:%S")
@@ -37,12 +47,12 @@ fi
 # Run gitleaks efficiently
 echo "🔍 Running gitleaks scan..."
 if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-    # In CI, check only the most recent commit for speed and reliability
-    echo "CI environment detected - scanning the most recent commit"
-    if gitleaks detect --source . --verbose --log-opts="HEAD^..HEAD"; then
-        echo "✅ No secrets found in most recent commit"
+    # In CI, check only the specified commit for speed and reliability
+    echo "CI environment detected - scanning commit: ${GIT_COMMIT:-HEAD}"
+    if gitleaks detect --source . --verbose --log-opts="${GIT_COMMIT:-HEAD}^..${GIT_COMMIT:-HEAD}"; then
+        echo "✅ No secrets found in commit ${GIT_COMMIT:-HEAD}"
     else
-        echo "❌ Secrets detected in most recent commit!"
+        echo "❌ Secrets detected in commit ${GIT_COMMIT:-HEAD}!"
         SECRETS_FOUND=1
     fi
 else
@@ -76,21 +86,21 @@ for pattern in "${PATTERNS[@]}"; do
     echo "Checking for $pattern..."
     
     if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-        # In CI, only check the most recent commit, excluding the secret scanning script itself
-        SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 HEAD || true)
+        # In CI, check if the target commit is for the secret scanner itself
+        SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 ${GIT_COMMIT:-HEAD} || true)
         if [[ ! -z "$SCRIPT_CHANGES" ]]; then
-            # If the most recent commit includes changes to scan-secret-history.sh, 
+            # If the target commit includes changes to scan-secret-history.sh, 
             # skip the pattern check to avoid false positives
             echo "🔄 Skipping pattern check for the secret scanner's own commit"
             continue
         fi
         
-        if [ -n "$(git log -p -G"$pattern" --max-count=1 HEAD | grep -E "$pattern" | 
+        if [ -n "$(git log -p -G"$pattern" --max-count=1 ${GIT_COMMIT:-HEAD} | grep -E "$pattern" | 
               grep -v "scripts/scan-secret-history.sh" | 
               grep -v "check-no-secrets.sh" |
               grep -v "\"$pattern\"" | 
               grep -v "'$pattern'" || true)" ]; then
-            echo "⚠️  Found possible secret pattern in most recent commit: $pattern"
+            echo "⚠️  Found possible secret pattern in commit ${GIT_COMMIT:-HEAD}: $pattern"
             SECRETS_FOUND=1
         fi
     else
@@ -129,22 +139,22 @@ echo "🔍 Checking for base64 encoded secrets..."
 BASE64_PATTERN='[A-Za-z0-9+/]{40,}={0,2}'
 
 if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-    # Check if the most recent commit is for the secret scanner
-    SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 HEAD || true)
+    # Check if the target commit is for the secret scanner
+    SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 ${GIT_COMMIT:-HEAD} || true)
     if [[ ! -z "$SCRIPT_CHANGES" ]]; then
         # Skip base64 check for the secret scanner's own commit
         echo "🔄 Skipping base64 check for the secret scanner's own commit"
     else
-        # In CI, only check the most recent commit for base64 patterns
-        BASE64_FOUND=$(git log -p --max-count=1 | 
+        # In CI, only check the target commit for base64 patterns
+        BASE64_FOUND=$(git log -p --max-count=1 ${GIT_COMMIT:-HEAD} | 
                       grep -v "playwright-report\|node_modules\|pnpm-lock.yaml\|\.png\|\.jpg\|\.svg\|scan-secret-history.sh" | 
                       grep -E "$BASE64_PATTERN" || true)
         
         if [ ! -z "$BASE64_FOUND" ]; then
-            echo "⚠️  Found potential base64 encoded data in latest commit - review recommended"
+            echo "⚠️  Found potential base64 encoded data in commit ${GIT_COMMIT:-HEAD} - review recommended"
             SECRETS_FOUND=1
         else
-            echo "✅ No base64 encoded secrets found in latest commit"
+            echo "✅ No base64 encoded secrets found in commit ${GIT_COMMIT:-HEAD}"
         fi
     fi
 else
@@ -164,19 +174,19 @@ echo ""
 echo "🔍 Checking deleted files for secret patterns..."
 
 if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-    # Check if the most recent commit is for the secret scanner
-    SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 HEAD || true)
+    # Check if the target commit is for the secret scanner
+    SCRIPT_CHANGES=$(git log -p -G"scan-secret-history.sh" --max-count=1 ${GIT_COMMIT:-HEAD} || true)
     if [[ ! -z "$SCRIPT_CHANGES" ]]; then
         # Skip deleted files check for the secret scanner's own commit
         echo "🔄 Skipping deleted files check for the secret scanner's own commit"
     else
-        # In CI, only check the most recent commit
-        DELETED_FILES=$(git log --diff-filter=D --summary --max-count=1 | grep "delete mode" | awk '{print $NF}' || true)
+        # In CI, only check the target commit
+        DELETED_FILES=$(git log --diff-filter=D --summary --max-count=1 ${GIT_COMMIT:-HEAD} | grep "delete mode" | awk '{print $NF}' || true)
         
         if [ -z "$DELETED_FILES" ]; then
-            echo "✅ No files deleted in latest commit"
+            echo "✅ No files deleted in commit ${GIT_COMMIT:-HEAD}"
         else
-            echo "Found deleted files in latest commit - checking for sensitive files"
+            echo "Found deleted files in commit ${GIT_COMMIT:-HEAD} - checking for sensitive files"
             for file in $DELETED_FILES; do
                 if [[ "$file" =~ \.(env|key|pem|p12|pfx|secret|password)$ ]]; then
                     echo "⚠️  Deleted file with sensitive extension: $file"
@@ -201,7 +211,7 @@ fi
 echo ""
 if [ "$SECRETS_FOUND" -eq 0 ]; then
     if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-        echo "✅ PASSED: No secrets detected in latest commit"
+        echo "✅ PASSED: No secrets detected in commit ${GIT_COMMIT:-HEAD}"
         echo "🛡️  Secret scanning successfully completed"
         echo "⭐ Git history has been properly cleaned"
     else
@@ -211,7 +221,7 @@ if [ "$SECRETS_FOUND" -eq 0 ]; then
     fi
 else
     if [ -n "${CI:-}" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-        echo "❌ FAILED: Potential secrets found in latest commit!"
+        echo "❌ FAILED: Potential secrets found in commit ${GIT_COMMIT:-HEAD}!"
         echo ""
         echo "🚨 SECURITY ALERT: Immediate action required"
         echo ""
