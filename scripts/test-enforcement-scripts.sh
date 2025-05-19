@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -12,19 +12,21 @@ echo "Testing check-npm-usage.sh..."
 # Create a test file with npm usage
 mkdir -p test-tmp || true
 echo 'npm install something' > test-tmp/bad-npm.js
-if ./scripts/check-npm-usage.sh 2>/dev/null; then
+# Temporarily disable ci-guard for this test
+export ALLOW_LOCAL_TEST=true
+if ./scripts/check-npm-usage.sh 2>&1 | grep -q "Found npm/npx usage"; then
+    echo "✅ check-npm-usage.sh correctly detected npm usage"
+else
     echo "❌ check-npm-usage.sh failed to detect npm usage"
     FAILED_TESTS=$((FAILED_TESTS + 1))
-else
-    echo "✅ check-npm-usage.sh correctly detected npm usage"
 fi
 rm -rf test-tmp || true
 
 # Test detect-config-drift.sh
 echo ""
 echo "Testing detect-config-drift.sh..."
-# Test that it runs without error
-if ! ./scripts/detect-config-drift.sh 2>/dev/null; then
+# Test that it runs without error with local test flag
+if ! ALLOW_LOCAL_TEST=true ./scripts/detect-config-drift.sh 2>/dev/null; then
     echo "❌ detect-config-drift.sh failed with error"
     FAILED_TESTS=$((FAILED_TESTS + 1))
 else

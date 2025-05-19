@@ -1,31 +1,17 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # This script must be sourced at the start of every enforcement script
 # It blocks manual execution outside CI
 
 set -euo pipefail
 
-# Check if running in CI
-if [ "${CI:-false}" != "true" ]; then
-    echo "❌ SECURITY VIOLATION: Script execution outside CI is forbidden"
-    echo ""
-    echo "This script can only be run in CI/CD pipeline."
-    echo "Manual execution is blocked to prevent:"
-    echo "  - Configuration drift"
-    echo "  - Unauthorized deployments"
-    echo "  - Security policy bypass"
-    echo ""
-    echo "If you need to test locally, use:"
-    echo "  CI=true $0"
-    echo ""
-    echo "WARNING: Local testing does not guarantee CI behavior."
-    exit 1
-fi
+# Source centralized CI detection
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/ci-detector.sh"
 
-# Check for required CI environment
-if [ -z "${GITHUB_ACTIONS:-}" ] && [ -z "${GITLAB_CI:-}" ] && [ -z "${CIRCLECI:-}" ]; then
-    echo "⚠️  WARNING: Unrecognized CI environment"
-    echo "Supported CI systems: GitHub Actions, GitLab CI, CircleCI"
+# Require CI environment
+if ! require_ci_environment; then
+    exit 1
 fi
 
 # Verify git hooks are enabled (check both old and new locations)
@@ -37,4 +23,4 @@ if [ -d ".git" ]; then
 fi
 
 # Log execution for audit
-echo "✅ CI execution verified: ${CI_NAME:-$CI} at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "✅ CI execution verified: ${CI_NAME:-${CI:-local}} at $(date -u +%Y-%m-%dT%H:%M:%SZ)"

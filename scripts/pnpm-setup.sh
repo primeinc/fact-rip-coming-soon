@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Setup script for fact.rip coming soon page
 # This enforces pnpm-only development

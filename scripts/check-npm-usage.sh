@@ -1,5 +1,11 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
+
+# Block manual execution unless test flag is set
+if [ "${CI:-false}" != "true" ] && [ "${ALLOW_LOCAL_TEST:-false}" != "true" ]; then
+    echo "❌ CI execution required"
+    exit 1
+fi
 
 # Check for any npm/npx usage in the codebase
 # Exit with error if found

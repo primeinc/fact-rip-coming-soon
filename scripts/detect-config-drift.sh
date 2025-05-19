@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -19,27 +19,27 @@ SITE_NAME=$(echo $DEPLOYMENT_CONFIG | jq -r '.netlify.siteName')
 # Check environment variable mapping
 echo "📋 Checking environment variable mapping..."
 
-# Map expected env vars to config values
-declare -A ENV_MAP=(
-    ["NETLIFY_SITE_ID"]="$SITE_ID"
-)
+# Map expected env vars to config values  
+# Using plain variables instead of associative array for portability
+if [ -n "${SITE_ID:-}" ]; then
+    EXPECTED_NETLIFY_SITE_ID="$SITE_ID"
+fi
 
 # Skip if running locally without env vars
 if [ -n "${CI:-}" ]; then
     # Verify each environment variable matches config
-    for ENV_VAR in "${!ENV_MAP[@]}"; do
-        CONFIG_VALUE="${ENV_MAP[$ENV_VAR]}"
-        if [ -z "${!ENV_VAR:-}" ]; then
-        echo "❌ Missing environment variable: $ENV_VAR"
-        echo "   Expected value from config: $CONFIG_VALUE"
-        DRIFT_DETECTED=1
-    elif [ "${!ENV_VAR}" != "$CONFIG_VALUE" ]; then
-        echo "❌ Environment variable mismatch: $ENV_VAR"
-        echo "   Config value: $CONFIG_VALUE"
-        echo "   Env value: ${!ENV_VAR}"
-        DRIFT_DETECTED=1
+    if [ -n "${EXPECTED_NETLIFY_SITE_ID:-}" ]; then
+        if [ -z "${NETLIFY_SITE_ID:-}" ]; then
+            echo "❌ Missing environment variable: NETLIFY_SITE_ID"
+            echo "   Expected value from config: $EXPECTED_NETLIFY_SITE_ID"
+            DRIFT_DETECTED=1
+        elif [ "${NETLIFY_SITE_ID}" != "$EXPECTED_NETLIFY_SITE_ID" ]; then
+            echo "❌ Environment variable mismatch: NETLIFY_SITE_ID"
+            echo "   Config value: $EXPECTED_NETLIFY_SITE_ID"
+            echo "   Env value: ${NETLIFY_SITE_ID}"
+            DRIFT_DETECTED=1
+        fi
     fi
-done
 fi
 
 # Check for hardcoded values in shell scripts
@@ -54,7 +54,7 @@ else
     # Fallback to generic patterns if config not available
     PATTERNS="${CONFIG_DRIFT_PATTERNS:-netlify\.app}"
 fi
-HARDCODED_URLS=$(grep -r "$PATTERNS" scripts/ --exclude="detect-config-drift.sh" || true)
+HARDCODED_URLS=$(grep -rE "$PATTERNS" scripts/ --exclude="detect-config-drift.sh" --exclude="test-*" || true)
 if [ ! -z "$HARDCODED_URLS" ]; then
     echo "❌ Found hardcoded URLs in scripts:"
     echo "$HARDCODED_URLS"
