@@ -261,7 +261,7 @@ jobs:
                   potentialAction: [{
                     '@type': 'OpenUri',
                     name: 'View Site',
-                    targets: [{os: 'default', uri: 'https://sparkly-bombolone-c419df.netlify.app/'}]
+                    targets: [{os: 'default', uri: '${{ secrets.NETLIFY_URL }}'}]
                   }]
                 })
               });

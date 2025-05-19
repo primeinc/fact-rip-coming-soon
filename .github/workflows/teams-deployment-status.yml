@@ -44,7 +44,7 @@ jobs:
               "@type": "OpenUri",
               "name": "Production Site",
               "targets": [
-                { "os": "default", "uri": "https://sparkly-bombolone-c419df.netlify.app" }
+                { "os": "default", "uri": "${{ secrets.NETLIFY_URL }}" }
               ]
             }
           ]
