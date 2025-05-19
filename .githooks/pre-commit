@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -euo pipefail
+
+echo "🔍 Running pre-commit checks..."
+
+# Run checks
+pnpm run check:pnpm
+./scripts/check-no-secrets.sh
+pnpm run check:storage
+pnpm run check:timeouts
+pnpm run typecheck
+
+echo "✅ Pre-commit checks passed"

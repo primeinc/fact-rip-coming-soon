@@ -1,7 +1,0 @@
-#!/bin/bash
-
-pnpm run check:pnpm
-./scripts/check-no-secrets.sh
-pnpm run check:storage
-pnpm run check:timeouts
-pnpm run typecheck
