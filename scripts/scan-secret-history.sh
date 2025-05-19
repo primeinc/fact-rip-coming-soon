@@ -99,7 +99,9 @@ for pattern in "${PATTERNS[@]}"; do
               grep -v "scripts/scan-secret-history.sh" | 
               grep -v "check-no-secrets.sh" |
               grep -v "\"$pattern\"" | 
-              grep -v "'$pattern'" || true)" ]; then
+              grep -v "'$pattern'" |
+              grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
+              grep -v "netlify token:create" || true)" ]; then
             echo "⚠️  Found possible secret pattern in commit ${GIT_COMMIT:-HEAD}: $pattern"
             SECRETS_FOUND=1
         fi
@@ -111,8 +113,11 @@ for pattern in "${PATTERNS[@]}"; do
                             --exclude-dir="{node_modules,.git,dist,coverage}" -E "$pattern" . || true)
         
         if [ ! -z "$CURRENT_FILES_CHECK" ]; then
-            # Only report meaningful matches by filtering scan-secret-history.sh
-            FILTERED_CHECK=$(echo "$CURRENT_FILES_CHECK" | grep -v "scripts/scan-secret-history.sh" || true)
+            # Only report meaningful matches by filtering scan-secret-history.sh and legitimate token creation
+            FILTERED_CHECK=$(echo "$CURRENT_FILES_CHECK" | 
+                             grep -v "scripts/scan-secret-history.sh" | 
+                             grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
+                             grep -v "netlify token:create" || true)
             if [ ! -z "$FILTERED_CHECK" ]; then
                 echo "⚠️  Found possible secret pattern in current files: $pattern"
                 echo "$FILTERED_CHECK" | head -3 || true
@@ -123,7 +128,9 @@ for pattern in "${PATTERNS[@]}"; do
         # Recent history check
         HISTORY_CHECK=$(git log -p -G"$pattern" --max-count=5 | 
                        grep -E "$pattern" | 
-                       grep -v "scripts/scan-secret-history.sh" || true)
+                       grep -v "scripts/scan-secret-history.sh" |
+                       grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
+                       grep -v "netlify token:create" || true)
         
         if [ ! -z "$HISTORY_CHECK" ]; then
             echo "⚠️  Found possible secret pattern in recent history: $pattern"
