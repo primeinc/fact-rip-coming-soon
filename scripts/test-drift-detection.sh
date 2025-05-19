@@ -32,7 +32,7 @@ echo -e "\nTest 2: Hardcoded value detection"
     # Create test file with hardcoded value
     TEST_FILE="$SCRIPT_DIR/test-hardcoded.sh"
     echo '#!/usr/bin/env bash' > "$TEST_FILE"
-    echo 'SITE_URL="sparkly-bombolone-c419df.netlify.app"' >> "$TEST_FILE"
+    echo 'SITE_URL="example.netlify.app"' >> "$TEST_FILE"
     
     # Run drift detection
     if "$SCRIPT_DIR/detect-config-drift.sh" >/dev/null 2>&1; then

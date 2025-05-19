@@ -68,9 +68,9 @@ class ZeroDriftEnforcer {
         const { siteId, productionUrl, siteName } = this.deploymentConfig.netlify;
         const patterns = [
             siteId,
-            'sparkly-bombolone-c419df',
-            '33e2505e-7a9d-4867-8fbf-db91ca602087'
-        ];
+            productionUrl?.replace('https://', ''),
+            siteName
+        ].filter(Boolean);
 
         const files = this.findFiles(['**/*.{js,ts,tsx,sh}'], ['node_modules', '.git', 'config']);
 
@@ -150,7 +150,10 @@ class ZeroDriftEnforcer {
             const content = fs.readFileSync(script, 'utf8');
 
             // Check shebang
-            this.check(content.startsWith('#!/bin/bash'), `Non-standard shebang in ${script}`);
+            this.check(
+                content.startsWith('#!/bin/bash') || content.startsWith('#!/usr/bin/env bash'),
+                `Non-standard shebang in ${script}`
+            );
 
             // Check error handling
             this.check(content.includes('set -euo pipefail'), `Missing error handling in ${script}`);
