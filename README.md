@@ -4,18 +4,31 @@ A mobile-first, single-page React app teaser for [fact.rip](https://fact.rip) â€
 
 ## Tech Stack
 
-- **React** + **TypeScript**
-- **Vite** for bundling
-- **Framer Motion** for animations
-- **Tailwind CSS** for styling
+- **React 19.1.0** + **TypeScript 5.8.3**
+- **Vite 6.3.5** for bundling
+- **Framer Motion 12.12.1** for animations
+- **Tailwind CSS 3.4.17** for styling
 - Mobile-first design (optimized for 375x667 and above)
+
+## Quick Start
+
+```bash
+# Clone repository
+git clone https://github.com/yourusername/fact-rip-coming-soon.git
+cd fact-rip-coming-soon
+
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm run dev
+```
+
+Visit `http://localhost:5173` to see the application.
 
 ## Development
 
 ```bash
-# Install dependencies
-pnpm install
-
 # Start dev server
 pnpm run dev
 
@@ -24,6 +37,9 @@ pnpm run build
 
 # Preview production build
 pnpm run preview
+
+# Run production preview script
+./preview.sh
 ```
 
 ## Design Philosophy
