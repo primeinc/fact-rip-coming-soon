@@ -50,6 +50,12 @@ jobs:
 
       - name: Enforce shell script standards
         run: ./scripts/enforce-shell-standards.sh
+      
+      - name: Run zero-drift enforcement
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: node scripts/enforce-all.js
 
       - name: Check deployment configuration drift
         run: ./scripts/detect-config-drift.sh
@@ -215,6 +221,15 @@ jobs:
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: |
           pnpm exec netlify deploy --prod --dir=dist
+
+      - name: Verify deployment configuration
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          VITE_TELEMETRY_ENDPOINT: ${{ secrets.VITE_TELEMETRY_ENDPOINT }}
+          VITE_ERROR_REPORT_ENDPOINT: ${{ secrets.VITE_ERROR_REPORT_ENDPOINT }}
+        run: |
+          ./scripts/verify-deployment.sh
 
       - name: Run production smoke test
         run: node smoke-test.js

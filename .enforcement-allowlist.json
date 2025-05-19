@@ -1,0 +1,22 @@
+{
+  "description": "Files allowed to bypass certain enforcement rules",
+  "version": "1.0.0",
+  "allowlists": {
+    "npm_usage": [
+      "scripts/test-enforcement-scripts.sh",
+      "scripts/check-npm-usage.sh"
+    ],
+    "hardcoded_values": [
+      "scripts/enforce-all.js",
+      "config/**",
+      "CLAUDE.md",
+      "deployment.json"
+    ],
+    "direct_storage": [
+      "src/utils/emergency-storage.ts",
+      "src/contexts/StorageContext.tsx",
+      "src/utils/storage-adapter.ts",
+      "src/hooks/useLocalStorage.ts"
+    ]
+  }
+}

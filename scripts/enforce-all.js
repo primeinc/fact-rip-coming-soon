@@ -15,6 +15,7 @@ class ZeroDriftEnforcer {
         this.violations = [];
         this.isCI = process.env.CI === 'true';
         this.deploymentConfig = this.loadConfig();
+        this.allowlist = this.loadAllowlist();
     }
 
     loadConfig() {
@@ -22,6 +23,15 @@ class ZeroDriftEnforcer {
             return JSON.parse(fs.readFileSync('config/deployment.json', 'utf8'));
         } catch (e) {
             this.fail('Failed to load deployment config: ' + e.message);
+        }
+    }
+    
+    loadAllowlist() {
+        try {
+            return JSON.parse(fs.readFileSync('.enforcement-allowlist.json', 'utf8'));
+        } catch (e) {
+            console.warn('No allowlist found, using defaults');
+            return { allowlists: {} };
         }
     }
 
@@ -45,10 +55,8 @@ class ZeroDriftEnforcer {
         files.forEach(file => {
             const content = fs.readFileSync(file, 'utf8');
             const npmMatch = content.match(/\b(npm|npx)\s+(install|run|exec)/g);
-            // Ignore npm usage in test files and enforcement scripts
-            if (npmMatch && !file.includes('enforce-all.js') && 
-                !file.includes('test-enforcement-scripts.sh') && 
-                !file.includes('check-npm-usage.sh')) {
+            const isAllowed = this.isFileAllowed(file, 'npm_usage');
+            if (npmMatch && !isAllowed) {
                 this.check(false, `Found npm/npx usage in ${file}: ${npmMatch[0]}`);
             }
         });
@@ -69,10 +77,8 @@ class ZeroDriftEnforcer {
         files.forEach(file => {
             const content = fs.readFileSync(file, 'utf8');
             patterns.forEach(pattern => {
-                if (content.includes(pattern) && 
-                    !file.includes('enforce-all.js') && 
-                    !file.includes('config') &&
-                    !file.includes('CLAUDE.md')) {
+                const isAllowed = this.isFileAllowed(file, 'hardcoded_values');
+                if (content.includes(pattern) && !isAllowed) {
                     this.check(false, `Hardcoded value "${pattern}" in ${file}`);
                 }
             });
@@ -88,11 +94,8 @@ class ZeroDriftEnforcer {
             const content = fs.readFileSync(file, 'utf8');
             const directStorage = content.match(/\b(localStorage|sessionStorage)\.(getItem|setItem|removeItem|clear)/g);
 
-            if (directStorage &&
-                !file.includes('emergency-storage') &&
-                !file.includes('StorageContext') &&
-                !file.includes('storage-adapter') &&
-                !file.includes('useLocalStorage')) {
+            const isAllowed = this.isFileAllowed(file, 'direct_storage');
+            if (directStorage && !isAllowed) {
                 this.check(false, `Direct storage access in ${file}: ${directStorage[0]}`);
             }
         });
@@ -238,12 +241,34 @@ class ZeroDriftEnforcer {
             return false;
         }
     }
+    
+    isFileAllowed(file, category) {
+        const allowedPatterns = this.allowlist.allowlists[category] || [];
+        return allowedPatterns.some(pattern => {
+            // Handle glob patterns
+            if (pattern.includes('**')) {
+                const regex = pattern
+                    .replace(/\*\*/g, '.*')
+                    .replace(/\*/g, '[^/]*')
+                    .replace(/\./g, '\\.');
+                return new RegExp(regex).test(file);
+            }
+            return file.includes(pattern);
+        });
+    }
 
     // Block manual execution
     enforceCI() {
-        if (!this.isCI) {
-            console.error('❌ This script can only be run in CI environment');
-            console.error('Set CI=true to bypass for testing');
+        if (!this.isCI || !process.env.GITHUB_ACTIONS) {
+            console.error('❌ This script MUST run in GitHub Actions CI');
+            console.error('Missing CI=true or GITHUB_ACTIONS=true');
+            process.exit(1);
+        }
+        
+        // Verify required secrets exist
+        if (!process.env.NETLIFY_SITE_ID || !process.env.NETLIFY_AUTH_TOKEN) {
+            console.error('❌ Missing required Netlify secrets in CI');
+            console.error('NETLIFY_SITE_ID and NETLIFY_AUTH_TOKEN must be set');
             process.exit(1);
         }
     }
@@ -252,8 +277,8 @@ class ZeroDriftEnforcer {
     async run() {
         console.log('🚀 Zero-Drift Enforcement Starting...\n');
 
-        // Uncomment to enforce CI-only execution
-        // this.enforceCI();
+        // ALWAYS enforce CI-only execution
+        this.enforceCI();
 
         this.checkPnpmOnly();
         this.checkHardcodedValues();
