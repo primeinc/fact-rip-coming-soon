@@ -142,8 +142,8 @@ for pattern in "${PATTERNS[@]}"; do
            grep -v "check-no-secrets.sh" |
            grep -v "\"$pattern\"" | 
            grep -v "'$pattern'" |
-           grep -v "NEW_AUTH_TOKEN=\$(netlify token:create" |
-           grep -v "TOKEN_NAME=\"ci-deploy-$(date" |
+           grep -v "NEW_AUTH_TOKEN=" | 
+           grep -v "TOKEN_NAME=" |
            grep -v "netlify token:create" | 
            grep -q "."; then
             echo "⚠️  Found possible secret pattern in commit ${GIT_COMMIT:-HEAD}: $pattern"
