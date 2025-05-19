@@ -29,10 +29,16 @@ echo -e "\nTest 2: Hardcoded value detection"
 (
     export ALLOW_LOCAL_TEST=true
     
-    # Create test file with hardcoded value
+    # Create test file with hardcoded value  
     TEST_FILE="$SCRIPT_DIR/test-hardcoded.sh"
     echo '#!/usr/bin/env bash' > "$TEST_FILE"
-    echo 'SITE_URL="example.netlify.app"' >> "$TEST_FILE"
+    # Use the actual production domain from config
+    if [ -f "config/deployment.json" ]; then
+        PROD_URL=$(jq -r '.netlify.productionUrl' config/deployment.json)
+        echo "SITE_URL=\"$PROD_URL\"" >> "$TEST_FILE"
+    else
+        echo 'SITE_URL="example.netlify.app"' >> "$TEST_FILE"
+    fi
     
     # Run drift detection
     if "$SCRIPT_DIR/detect-config-drift.sh" >/dev/null 2>&1; then
